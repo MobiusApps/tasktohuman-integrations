@@ -152,10 +152,15 @@ jobs:
           assert not [n for n in sdist if "/tests/" in n or "/fixtures/" in n or n.endswith(".env")], sdist
           PY
 
+      # In a fresh virtual environment: the runner's Python keeps packages between runs, and pip skips a wheel whose
+      # version is already installed, so the tests would run against an older build of the same version.
       - name: Test (against the installed wheel)
         run: |
-          python -m pip install dist/*.whl
-          python -m unittest discover -s tests -v
+          rm -rf .wheel-venv
+          python -m venv .wheel-venv
+          .wheel-venv/bin/python -m pip install dist/*.whl
+          .wheel-venv/bin/python -m unittest discover -s tests -v
+          rm -rf .wheel-venv
 
       # The sdist and wheel, for the GitHub release (nothing is published to PyPI). One copy: the pure-Python wheel
       # is the same for every Python version.
