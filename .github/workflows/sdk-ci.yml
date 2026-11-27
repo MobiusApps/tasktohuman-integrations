@@ -1,0 +1,496 @@
+# SDK CI, one job per SDK, one for the n8n community node (n8n/), one for the Zapier app (zapier/) and one for the Make
+# app (make/). Tests run against local fake APIs or files only, never a real TaskToHuman host.
+# Last, on main and only when every package job passed: a GitHub Release of the commit, named YYYYMMDD-xx, with the built
+# packages attached (README, "Releases on GitHub").
+# Publishing to npm or PyPI happens only when a maintainer starts a run by hand on main with the "publish" input set
+# (default "no"); each publish job waits for its protected environment's approval.
+#
+# Every job runs on the project's self-hosted runner (README, "CI"). The package jobs skip pull requests from forks
+# (the `if:` on each); a maintainer runs a fork's changes only after reviewing them.
+name: sdk-ci
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Also publish the tested packages (main only, after the environment's approval)"
+        type: choice
+        options: ["no", "npm", "pypi", "both", "n8n"]
+        default: "no"
+  # Automatic runs (on since 2026-11-23): every push to main and every pull request that touches a package, the API
+  # description, the fixtures or the CI itself. They never publish: the publish jobs need a run started by hand.
+  push:
+    branches: [main]
+    paths: ["sdks/**", "n8n/**", "zapier/**", "make/**", "openapi/**", "fixtures/**", ".github/**"]
+  pull_request:
+    paths: ["sdks/**", "n8n/**", "zapier/**", "make/**", "openapi/**", "fixtures/**", ".github/**"]
+
+permissions: {}
+
+# A newer plain run cancels an older one on the same ref. A publish run gets a group of its own (its run id), so no
+# later run can cancel it while it waits for approval or sits between the npm and PyPI uploads.
+concurrency:
+  group: sdk-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.publish != 'no' && github.run_id || 'ci' }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sdk-typescript:
+    # Frozen install, edge-safety check, typecheck, tests, build, and a check of what `npm pack` would publish.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: sdks/typescript
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # package.json "engines" allows >=22.
+          node-version: 22.23.5
+          package-manager-cache: false
+
+      - name: Install (frozen lockfile, no install scripts)
+        run: npm ci --ignore-scripts
+
+      - name: "Edge check (no node: imports in src, no runtime dependencies)"
+        run: npm run check:edge
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Packed files are only dist, README, CHANGELOG, LICENSE, NOTICE and package.json
+        run: |
+          unexpected="$(npm pack --dry-run --json | jq -r '.[0].files[].path' \
+            | grep -Ev '^(dist/[a-z]+\.(js|d\.ts)|README\.md|CHANGELOG\.md|LICENSE|NOTICE|package\.json)$' || true)"
+          if [[ -n "$unexpected" ]]; then
+            echo "::error::unexpected files in the package: $unexpected"
+            exit 1
+          fi
+
+      # The tarball `npm publish` would send, for the GitHub release (nothing is published to npm).
+      - name: Pack
+        run: |
+          mkdir -p "$RUNNER_TEMP/pack"
+          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/pack"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdk-typescript
+          path: ${{ runner.temp }}/pack/*.tgz
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
+
+  sdk-python:
+    # mypy --strict, tests from source, build, wheel contents, then the tests again against the installed wheel.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        python: ["3.10", "3.14"]
+    defaults:
+      run:
+        working-directory: sdks/python
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install build tools (pinned)
+        run: python -m pip install build==1.6.1 mypy==2.4.1
+
+      - name: Typecheck (mypy --strict)
+        run: python -m mypy
+
+      - name: Test (from source)
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+
+      - name: Build
+        run: python -m build --outdir dist .
+
+      - name: Wheel has py.typed, LICENSE, NOTICE, the licence and project metadata and no dependencies; sdist has no tests
+        run: |
+          python - <<'PY'
+          import glob, tarfile, zipfile
+          z = zipfile.ZipFile(glob.glob("dist/*.whl")[0])
+          names = z.namelist()
+          assert "tasktohuman/py.typed" in names, names
+          for f in ("LICENSE", "NOTICE"):
+              assert any(n.endswith(".dist-info/licenses/" + f) for n in names), (f, names)
+          meta = z.read(next(n for n in names if n.endswith("METADATA"))).decode()
+          assert "Requires-Dist" not in meta, meta
+          assert "License-Expression: Apache-2.0" in meta, meta
+          assert "Requires-Python: >=3.10" in meta, meta
+          assert "Project-URL: Issues, https://github.com/MobiusApps/tasktohuman-integrations/issues" in meta, meta
+          assert all(n.startswith(("tasktohuman/", "tasktohuman-")) for n in names), names
+          sdist = tarfile.open(glob.glob("dist/*.tar.gz")[0]).getnames()
+          for f in ("LICENSE", "NOTICE"):
+              assert any(n.endswith("/" + f) for n in sdist), (f, sdist)
+          assert not [n for n in sdist if "/tests/" in n or "/fixtures/" in n or n.endswith(".env")], sdist
+          PY
+
+      - name: Test (against the installed wheel)
+        run: |
+          python -m pip install dist/*.whl
+          python -m unittest discover -s tests -v
+
+      # The sdist and wheel, for the GitHub release (nothing is published to PyPI). One copy: the pure-Python wheel
+      # is the same for every Python version.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: matrix.python == '3.14'
+        with:
+          name: sdk-python
+          path: sdks/python/dist/*
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
+
+  n8n-node:
+    # The n8n community node (n8n/): frozen install, n8n's community node lint, typecheck, tests (they build first),
+    # and a check of what `npm pack` would publish. "publish: n8n" publishes the tarball built here (publish-n8n).
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: n8n
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.5
+          package-manager-cache: false
+
+      - name: Install (frozen lockfile, no install scripts)
+        run: npm ci --ignore-scripts
+
+      - name: No runtime dependencies; n8n-workflow is the only peer dependency
+        run: |
+          jq -e '(.dependencies // {}) == {} and .peerDependencies == {"n8n-workflow": "*"}' package.json
+
+      - name: Lint (n8n community node rules, strict mode)
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test (builds first)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Packed files are only dist, README.md, LICENSE.md and package.json
+        run: |
+          unexpected="$(npm pack --dry-run --json | jq -r '.[0].files[].path' \
+            | grep -Ev '^(dist/.+\.(js|js\.map|d\.ts|json|svg)|README\.md|LICENSE\.md|package\.json)$' || true)"
+          if [[ -n "$unexpected" ]]; then
+            echo "::error::unexpected files in the package: $unexpected"
+            exit 1
+          fi
+
+      - name: Pack
+        run: |
+          mkdir -p "$RUNNER_TEMP/pack"
+          npm pack --ignore-scripts --pack-destination "$RUNNER_TEMP/pack"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: n8n-node
+          path: ${{ runner.temp }}/pack/*.tgz
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
+
+  zapier-app:
+    # The Zapier CLI app (zapier/): frozen install, lint, typecheck, tests (they build first) and Zapier's local schema
+    # validation, which needs no Zapier login and no network. Nothing is published: maintainers push to Zapier by hand.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: zapier
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          # Zapier runs apps on Node.js 22.
+          node-version: 22.23.5
+          package-manager-cache: false
+
+      - name: Install (frozen lockfile, no install scripts)
+        run: npm ci --ignore-scripts
+
+      - name: zapier-platform-core is the only runtime dependency
+        run: |
+          jq -e '.dependencies == {"zapier-platform-core": "19.3.0"}' package.json
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test (builds first)
+        run: npm test
+
+      - name: Validate (zapier-platform validate --without-style, local only)
+        run: npm run validate
+
+  make-app:
+    # The Make custom app (make/): frozen install (Ajv only, for Make's editor schemas), then the structural, contract,
+    # security and upload-script tests; files only, no Make account, no network. The zip holds the component files as
+    # scripts/upload.mjs sends them, for the GitHub release. Nothing is uploaded to Make: maintainers do that by hand.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: make
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.5
+          package-manager-cache: false
+
+      - name: Install (frozen lockfile, no install scripts)
+        run: npm ci --ignore-scripts
+
+      - name: No runtime dependencies
+        run: |
+          jq -e '(.dependencies // {}) == {}' package.json
+
+      # A repository check that needs nothing installed: every job of every workflow asks for the self-hosted runner.
+      - name: Every job on the self-hosted runner
+        working-directory: .
+        run: python3 -I -B .github/scripts/check-runners.py .github/workflows
+
+      - name: Test
+        run: npm test
+
+      # Python's zipfile, not `zip`: the runner has python3 but no zip.
+      - name: Zip the app files
+        run: |
+          mkdir -p "$RUNNER_TEMP/make"
+          python3 -I -m zipfile -c "$RUNNER_TEMP/make/make-app-$(jq -r .version package.json).zip" app
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: make-app
+          path: ${{ runner.temp }}/make/*.zip
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 30
+
+  # One GitHub Release per commit of main that passed every package job above (README, "Releases on GitHub"): the tag
+  # YYYYMMDD-xx on this commit, notes with the SDK versions and the commits since the previous release, and the
+  # packages the jobs built. Nothing is published to npm or PyPI. A commit that already has its release gets no
+  # second one (a re-run is safe).
+  release:
+    name: GitHub release
+    needs: [sdk-typescript, sdk-python, n8n-node, zapier-app, make-app]
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 10
+    concurrency:
+      group: github-release
+      cancel-in-progress: false
+    permissions:
+      contents: write # create the release and its tag, attach the packages
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          path: ${{ runner.temp }}/packages
+          merge-multiple: true
+
+      - name: Scripts (unit tests)
+        run: python3 -I -B .github/scripts/github_release_test.py
+
+      - name: Create the release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_INTRO: "The SDK and n8n node packages built from this commit, after their checks passed. Not published to npm or PyPI by this release."
+        run: |
+          RELEASE_FACTS="$(jq -n --arg ts "$(jq -r .version sdks/typescript/package.json)" \
+            --arg py "$(sed -nE 's/^__version__ = "([^"]+)"$/\1/p' sdks/python/src/tasktohuman/_version.py)" \
+            --arg n8n "$(jq -r .version n8n/package.json)" \
+            --arg zapier "$(jq -r .version zapier/package.json)" \
+            --arg make "$(jq -r .version make/package.json)" \
+            '[["TypeScript SDK (@tasktohuman/sdk)", $ts], ["Python SDK (tasktohuman)", $py], ["n8n node (n8n-nodes-tasktohuman)", $n8n], ["Zapier app (not published by this release)", $zapier], ["Make app (not uploaded by this release)", $make], ["Licence", "Apache-2.0 (SDKs), MIT (n8n node, Zapier app, Make app)"]]')"
+          export RELEASE_FACTS
+          python3 -I -B .github/scripts/github_release.py repo "$RUNNER_TEMP"/packages/*
+
+  # Optional, by hand only: publishes the tarball the sdk-typescript job built and tested. Runs only when a maintainer
+  # started this run on main with publish = npm or both, and only after the "npm" environment's reviewer approves.
+  # Authentication: npm trusted publishing (OIDC, no secret) once it is set up on npmjs.com; until then the
+  # environment secret NPM_TOKEN. Provenance is attached either way.
+  publish-npm:
+    name: Publish to npm
+    needs: [sdk-typescript, sdk-python]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish == 'npm' || inputs.publish == 'both')
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 10
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@tasktohuman/sdk
+    permissions:
+      id-token: write # trusted publishing and provenance
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-typescript
+          path: ${{ runner.temp }}/pack
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.5
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - name: npm with trusted publishing (pinned)
+        run: npm install --global --ignore-scripts npm@11.21.2
+
+      - name: Publish
+        env:
+          # Empty when the secret is not set: npm then uses trusted publishing.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish "$RUNNER_TEMP"/pack/*.tgz --access public --provenance --ignore-scripts
+
+  # Optional, by hand only: publishes the sdist and wheel the sdk-python job built and tested. Runs only when a
+  # maintainer started this run on main with publish = pypi or both, and only after the "pypi" environment's reviewer
+  # approves. Authentication: PyPI trusted publishing (OIDC, no secret); the environment secret PYPI_API_TOKEN only
+  # as a fallback.
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [sdk-typescript, sdk-python]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish == 'pypi' || inputs.publish == 'both')
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/tasktohuman/
+    permissions:
+      id-token: write # trusted publishing and attestations
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-python
+          path: ${{ runner.temp }}/dist
+
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: ${{ runner.temp }}/dist
+          # Empty when the secret is not set: the action then uses trusted publishing.
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+  # Optional, by hand only: publishes the n8n node tarball the n8n-node job built and tested. Runs only when a maintainer
+  # started this run on main with publish = n8n, and only after the "npm" environment's reviewer approves. n8n requires
+  # community nodes to be published from GitHub Actions with provenance. Authentication as for publish-npm: trusted
+  # publishing once set up for n8n-nodes-tasktohuman on npmjs.com, until then the environment secret NPM_TOKEN.
+  # Afterwards, n8n's own scanner checks the published package in scan-n8n, a job without the OIDC token.
+  publish-n8n:
+    name: Publish the n8n node to npm
+    needs: [sdk-typescript, sdk-python, n8n-node]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish == 'n8n'
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 15
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/n8n-nodes-tasktohuman
+    permissions:
+      id-token: write # trusted publishing and provenance
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: n8n-node
+          path: ${{ runner.temp }}/pack
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.5
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+
+      # Trusted publishing needs npm 11.5.1 or later; Node 22 ships npm 10.
+      - name: npm with trusted publishing (pinned)
+        run: npm install --global --ignore-scripts npm@11.21.2
+
+      - name: Publish
+        env:
+          # Empty when the secret is not set: npm then uses trusted publishing.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish "$RUNNER_TEMP"/pack/*.tgz --access public --provenance --ignore-scripts
+
+  # n8n's own scanner on the version just published (the automated check of n8n's verification). A job of its own,
+  # with no id-token and no environment: the scanner's dependencies are not pinned by a lockfile, so they must never
+  # run where a publishing token can be minted. Install scripts are skipped (the scanner works without them).
+  scan-n8n:
+    name: Scan the published n8n node
+    needs: [publish-n8n]
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: n8n-node
+          path: ${{ runner.temp }}/pack
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.23.5
+          package-manager-cache: false
+
+      - name: n8n's community package scan of the published version
+        run: |
+          version="$(tar -xzOf "$RUNNER_TEMP"/pack/*.tgz package/package.json | jq -r .version)"
+          for _ in 1 2 3 4 5; do
+            npm view "n8n-nodes-tasktohuman@$version" version >/dev/null 2>&1 && break
+            sleep 30
+          done
+          npm exec --yes --ignore-scripts @n8n/scan-community-package@0.40.1 -- "n8n-nodes-tasktohuman@$version"

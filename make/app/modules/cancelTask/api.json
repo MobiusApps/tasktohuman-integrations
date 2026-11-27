@@ -1,0 +1,15 @@
+{
+  "url": "/v1/tasks/{{encodeURL(parameters.id)}}/cancel",
+  "method": "POST",
+  "body": {},
+  "response": {
+    "output": "{{body}}",
+    "error": {
+      "message": "[{{statusCode}}] {{ifempty(body.title, 'TaskToHuman answered with an error.')}} {{ifempty(body.detail, '')}} {{ifempty(body.code, '')}}{{if(body.errors, ' Fields: ' + join(keys(body.errors), ', '), '')}}",
+      "409": {
+        "type": "DataError",
+        "message": "[409] This task is already finished ({{ifempty(body.state, 'finished')}}): there is nothing to cancel. Add an Ignore or Resume error handler if that is expected."
+      }
+    }
+  }
+}

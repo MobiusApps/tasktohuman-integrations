@@ -1,0 +1,9 @@
+[
+  {
+    "name": "apiKey",
+    "type": "password",
+    "label": "API Key",
+    "required": true,
+    "help": "A `tth_live_…` or `tth_test_…` key from TaskToHuman → Developers → API keys. Create one key just for Make so you can revoke it alone. A test key notifies only you and its tasks end quickly."
+  }
+]

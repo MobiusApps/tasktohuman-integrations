@@ -1,0 +1,38 @@
+{
+  "title": "Not enough credits for the task",
+  "request": {
+    "method": "POST",
+    "path": "/v1/tasks",
+    "headers": {
+      "Idempotency-Key": "refund-4822"
+    },
+    "body": {
+      "task_type": "approve_refund",
+      "title": "Refund €80 to order #4822?",
+      "payload": {
+        "order_id": "4822",
+        "amount": 80,
+        "reason": "Wrong size",
+        "customer_email": "marta@example.com"
+      },
+      "deadline_minutes": 120
+    }
+  },
+  "response": {
+    "status": 402,
+    "headers": {
+      "Content-Type": "application/problem+json"
+    },
+    "body": {
+      "title": "Not enough credits for this task.",
+      "status": 402,
+      "code": "not_enough_credits",
+      "needed": 4,
+      "available": 2,
+      "held": 196,
+      "reason": "auto_buy_off",
+      "auto_buy": false,
+      "traceId": "00-7d3e1c2b9a8f4e6d5c4b3a2918071625-1a2b3c4d5e6f7081-01"
+    }
+  }
+}

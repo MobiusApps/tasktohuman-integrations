@@ -1,0 +1,44 @@
+[
+  {
+    "name": "state",
+    "type": "select",
+    "label": "State",
+    "options": [
+      { "label": "Open (before the first notification)", "value": "open" },
+      { "label": "Notified", "value": "notified" },
+      { "label": "Acknowledged", "value": "acknowledged" },
+      { "label": "Resolved", "value": "resolved" },
+      { "label": "Expired", "value": "expired" },
+      { "label": "Cancelled", "value": "cancelled" }
+    ]
+  },
+  {
+    "name": "task_type",
+    "type": "select",
+    "label": "Task Type",
+    "mode": "edit",
+    "options": "rpc://listTaskTypes"
+  },
+  {
+    "name": "created_after",
+    "type": "date",
+    "label": "Created After"
+  },
+  {
+    "name": "created_before",
+    "type": "date",
+    "label": "Created Before"
+  },
+  {
+    "name": "limit",
+    "type": "uinteger",
+    "label": "Limit",
+    "required": true,
+    "default": 10,
+    "validate": {
+      "min": 1,
+      "max": 500
+    },
+    "help": "The most tasks this module returns in one run."
+  }
+]

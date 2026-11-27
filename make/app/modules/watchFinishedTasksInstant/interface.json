@@ -1,0 +1,280 @@
+[
+  {
+    "name": "id",
+    "type": "text",
+    "label": "Task ID"
+  },
+  {
+    "name": "state",
+    "type": "text",
+    "label": "State"
+  },
+  {
+    "name": "task_type",
+    "type": "text",
+    "label": "Task Type"
+  },
+  {
+    "name": "title",
+    "type": "text",
+    "label": "Title"
+  },
+  {
+    "name": "test",
+    "type": "boolean",
+    "label": "Test Task"
+  },
+  {
+    "name": "urgency",
+    "type": "text",
+    "label": "Urgency"
+  },
+  {
+    "name": "tags",
+    "type": "array",
+    "label": "Tags",
+    "spec": {
+      "type": "text"
+    }
+  },
+  {
+    "name": "owner",
+    "type": "collection",
+    "label": "Owner",
+    "spec": [
+      {
+        "name": "id",
+        "type": "text",
+        "label": "ID"
+      },
+      {
+        "name": "name",
+        "type": "text",
+        "label": "Name"
+      }
+    ]
+  },
+  {
+    "name": "created_at",
+    "type": "date",
+    "label": "Created At"
+  },
+  {
+    "name": "expires_at",
+    "type": "date",
+    "label": "Expires At"
+  },
+  {
+    "name": "finished_at",
+    "type": "date",
+    "label": "Finished At"
+  },
+  {
+    "name": "escalations",
+    "type": "uinteger",
+    "label": "Escalations"
+  },
+  {
+    "name": "decision",
+    "type": "collection",
+    "label": "Decision",
+    "spec": [
+      {
+        "name": "action",
+        "type": "text",
+        "label": "Decision"
+      },
+      {
+        "name": "automatic",
+        "type": "boolean",
+        "label": "Decided Automatically"
+      },
+      {
+        "name": "by",
+        "type": "collection",
+        "label": "Decided By",
+        "spec": [
+          {
+            "name": "id",
+            "type": "text",
+            "label": "ID"
+          },
+          {
+            "name": "name",
+            "type": "text",
+            "label": "Name"
+          }
+        ]
+      },
+      {
+        "name": "at",
+        "type": "date",
+        "label": "Decided At"
+      },
+      {
+        "name": "reason",
+        "type": "text",
+        "label": "Reason"
+      },
+      {
+        "name": "comment",
+        "type": "text",
+        "label": "Comment"
+      },
+      {
+        "name": "payload",
+        "type": "any",
+        "label": "Edited Values"
+      },
+      {
+        "name": "fields",
+        "type": "any",
+        "label": "Response Fields"
+      },
+      {
+        "name": "attachments",
+        "type": "array",
+        "label": "Attachments",
+        "spec": {
+          "type": "collection",
+          "spec": [
+            {
+              "name": "id",
+              "type": "text",
+              "label": "ID"
+            },
+            {
+              "name": "field",
+              "type": "text",
+              "label": "Field"
+            },
+            {
+              "name": "name",
+              "type": "text",
+              "label": "File Name"
+            },
+            {
+              "name": "size",
+              "type": "uinteger",
+              "label": "Size (bytes)"
+            },
+            {
+              "name": "content_type",
+              "type": "text",
+              "label": "Content Type"
+            },
+            {
+              "name": "sha256",
+              "type": "text",
+              "label": "SHA-256"
+            },
+            {
+              "name": "url",
+              "type": "text",
+              "label": "Download Path"
+            },
+            {
+              "name": "removed",
+              "type": "boolean",
+              "label": "Removed (storage allowance)"
+            },
+            {
+              "name": "removed_at",
+              "type": "date",
+              "label": "Removed At"
+            },
+            {
+              "name": "removed_reason",
+              "type": "text",
+              "label": "Removed Reason"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "name": "payload",
+    "type": "any",
+    "label": "Payload"
+  },
+  {
+    "name": "payload_sha256",
+    "type": "text",
+    "label": "Payload SHA-256"
+  },
+  {
+    "name": "quorum",
+    "type": "collection",
+    "label": "Quorum",
+    "spec": [
+      {
+        "name": "needed",
+        "type": "uinteger",
+        "label": "Approvals Needed"
+      },
+      {
+        "name": "approvals",
+        "type": "uinteger",
+        "label": "Approvals"
+      },
+      {
+        "name": "rejections",
+        "type": "uinteger",
+        "label": "Rejections"
+      },
+      {
+        "name": "outcome",
+        "type": "text",
+        "label": "Outcome"
+      },
+      {
+        "name": "answers",
+        "type": "array",
+        "label": "Answers",
+        "spec": {
+          "type": "collection",
+          "spec": [
+            {
+              "name": "by",
+              "type": "collection",
+              "label": "By",
+              "spec": [
+                {
+                  "name": "id",
+                  "type": "text",
+                  "label": "ID"
+                },
+                {
+                  "name": "name",
+                  "type": "text",
+                  "label": "Name"
+                }
+              ]
+            },
+            {
+              "name": "override",
+              "type": "boolean",
+              "label": "Override"
+            },
+            {
+              "name": "answer",
+              "type": "text",
+              "label": "Answer"
+            },
+            {
+              "name": "at",
+              "type": "date",
+              "label": "At"
+            },
+            {
+              "name": "comment",
+              "type": "text",
+              "label": "Comment"
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

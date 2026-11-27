@@ -1,0 +1,13 @@
+{
+  "condition": "{{body.id}}",
+  "respond": {
+    "status": 200,
+    "type": "json",
+    "body": {
+      "received": true
+    }
+  },
+  "output": {
+    "id": "{{body.id}}"
+  }
+}

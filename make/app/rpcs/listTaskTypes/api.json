@@ -1,0 +1,21 @@
+{
+  "url": "/v1/task-types",
+  "method": "GET",
+  "qs": {
+    "limit": 100
+  },
+  "response": {
+    "iterate": "{{body.data}}",
+    "output": {
+      "label": "{{item.name}}",
+      "value": "{{item.key}}"
+    },
+    "limit": 500
+  },
+  "pagination": {
+    "qs": {
+      "cursor": "{{body.next_cursor}}"
+    },
+    "condition": "{{body.next_cursor}}"
+  }
+}

@@ -1,0 +1,5 @@
+node_modules/
+.env*
+*.zip
+# Written by scripts/upload.mjs: the name Make gave your custom app, per zone (no secret).
+.makeapp

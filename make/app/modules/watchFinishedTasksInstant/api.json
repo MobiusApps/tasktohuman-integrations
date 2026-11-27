@@ -1,0 +1,12 @@
+{
+  "url": "/v1/tasks/{{encodeURL(payload.id)}}",
+  "method": "GET",
+  "response": {
+    "valid": {
+      "condition": "{{body.id === payload.id && !!body.finished_at}}",
+      "type": "DataError",
+      "message": "[{{statusCode}}] The posted id is not a finished task of this workspace and mode; nothing was output."
+    },
+    "output": "{{body}}"
+  }
+}

@@ -1,0 +1,7 @@
+[
+  {
+    "type": "banner",
+    "title": "Where to paste this address",
+    "text": "After you save, Make shows this webhook's address. Copy it into Create a Task → Callback URL in the scenario that creates the tasks, or into the task type's callback URL in TaskToHuman (every task of the type then reports here). Keep this scenario on: Make turns off a webhook that no scenario has used for 5 days. Each finished task is read again through the API with your connection, so a forged post cannot invent a task or change its data. It can only make an already finished task of your workspace arrive again: deduplicate on the task id if the scenario must run once per task."
+  }
+]

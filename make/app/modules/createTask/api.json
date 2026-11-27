@@ -1,0 +1,19 @@
+{
+  "url": "/v1/tasks",
+  "method": "POST",
+  "headers": {
+    "idempotency-key": "{{parameters.idempotency_key}}"
+  },
+  "body": {
+    "task_type": "{{parameters.task_type}}",
+    "title": "{{parameters.title}}",
+    "payload": "{{parameters.payload}}",
+    "deadline_minutes": "{{parameters.deadline_minutes}}",
+    "urgency": "{{if(parameters.urgent, 'high', undefined)}}",
+    "approvers": "{{parameters.approvers}}",
+    "callback_url": "{{parameters.callback_url}}"
+  },
+  "response": {
+    "output": "{{body}}"
+  }
+}

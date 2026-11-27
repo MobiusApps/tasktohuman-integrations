@@ -1,0 +1,67 @@
+{
+  "name": "n8n-nodes-tasktohuman",
+  "version": "0.1.0",
+  "description": "n8n community node for TaskToHuman: ask a person to approve, edit or do a task, wait for the decision, and trigger workflows when tasks finish.",
+  "license": "MIT",
+  "author": {
+    "name": "João Figueiredo Consultoria, Lda",
+    "email": "support@tasktohuman.com"
+  },
+  "homepage": "https://github.com/MobiusApps/tasktohuman-integrations/tree/main/n8n#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MobiusApps/tasktohuman-integrations.git",
+    "directory": "n8n"
+  },
+  "bugs": {
+    "url": "https://github.com/MobiusApps/tasktohuman-integrations/issues"
+  },
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "tasktohuman",
+    "human-in-the-loop",
+    "approval"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "files": [
+    "dist",
+    "!dist/tsconfig.tsbuildinfo"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "n8n-node build && node --test --test-reporter=spec \"test/*.test.mjs\""
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/TaskToHumanApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/TaskToHuman/TaskToHuman.node.js",
+      "dist/nodes/TaskToHumanTrigger/TaskToHumanTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "0.56.1",
+    "@types/node": "22.19.0",
+    "eslint": "9.39.4",
+    "n8n-workflow": "2.47.0",
+    "prettier": "3.8.3",
+    "typescript": "5.9.3"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
+}

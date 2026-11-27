@@ -1,0 +1,44 @@
+{
+  "title": "Create a test task",
+  "request": {
+    "method": "POST",
+    "path": "/v1/tasks",
+    "headers": {
+      "Idempotency-Key": "refund-test"
+    },
+    "body": {
+      "task_type": "approve_refund",
+      "title": "Refund €249 to order #4821?",
+      "payload": {
+        "order_id": "4821",
+        "amount": 249,
+        "reason": "Arrived damaged",
+        "customer_email": "marta@example.com"
+      },
+      "deadline_minutes": 120
+    }
+  },
+  "response": {
+    "status": 201,
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Location": "/v1/tasks/01a1e3a9-1f52-7d3b-8e64-2a9c5d0b7e31"
+    },
+    "body": {
+      "id": "01a1e3a9-1f52-7d3b-8e64-2a9c5d0b7e31",
+      "state": "notified",
+      "task_type": "approve_refund",
+      "title": "Refund €249 to order #4821?",
+      "test": true,
+      "owner": {
+        "id": "01a1dcba-b57a-7aa2-b6b1-05d81545c2ba",
+        "name": "Ana"
+      },
+      "expires_at": "2026-11-16T11:19:20.7134083Z",
+      "created_at": "2026-11-16T09:19:20.7134083Z",
+      "finished_at": null,
+      "escalations": 0,
+      "decision": null
+    }
+  }
+}

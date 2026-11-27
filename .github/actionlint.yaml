@@ -1,0 +1,3 @@
+# actionlint settings. The self-hosted runner's custom label:
+self-hosted-runner:
+  labels: [tasktohuman]

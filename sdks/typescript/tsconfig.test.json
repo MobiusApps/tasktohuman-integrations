@@ -1,0 +1,11 @@
+{
+  // Tests: compiled together with src/ into build-test/ (never published), run with node --test.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "declaration": false,
+    "rootDir": ".",
+    "outDir": "build-test"
+  },
+  "include": ["src", "test"]
+}

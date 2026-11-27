@@ -1,0 +1,22 @@
+{
+  "title": "Cancel a task that is already finished",
+  "request": {
+    "method": "POST",
+    "path": "/v1/tasks/01a1e3a7-6cee-70ef-995d-129e212beeb0/cancel"
+  },
+  "response": {
+    "status": 409,
+    "headers": {
+      "Content-Type": "application/problem+json"
+    },
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+      "title": "This task is already finished.",
+      "status": 409,
+      "code": "task_already_finished",
+      "state": "cancelled",
+      "action": "cancelled",
+      "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    }
+  }
+}

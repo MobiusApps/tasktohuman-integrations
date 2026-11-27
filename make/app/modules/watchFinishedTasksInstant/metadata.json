@@ -1,0 +1,6 @@
+{
+  "label": "Watch Finished Tasks (Instant)",
+  "description": "Triggers within seconds when a task that reports to this module's address finishes. Paste the address into Create a Task's Callback URL or into the task type's callback URL.",
+  "typeId": 10,
+  "webhook": "taskFinished"
+}

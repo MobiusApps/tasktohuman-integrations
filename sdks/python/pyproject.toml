@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling==1.33.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tasktohuman"
+dynamic = ["version"]
+description = "Official Python SDK for TaskToHuman: ask a Human, get the decision back."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "João Figueiredo Consultoria, Lda" }]
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["tasktohuman", "human-in-the-loop", "human-approval", "approvals", "ai-agents", "webhooks", "sdk"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/MobiusApps/tasktohuman-integrations/tree/main/sdks/python"
+Documentation = "https://docs.tasktohuman.com"
+Source = "https://github.com/MobiusApps/tasktohuman-integrations"
+Issues = "https://github.com/MobiusApps/tasktohuman-integrations/issues"
+Changelog = "https://github.com/MobiusApps/tasktohuman-integrations/blob/main/sdks/python/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/tasktohuman/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tasktohuman"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "README.md", "LICENSE", "NOTICE", "CHANGELOG.md", "pyproject.toml"]
+
+[tool.mypy]
+strict = true
+python_version = "3.10"
+files = ["src"]

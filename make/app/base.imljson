@@ -1,0 +1,47 @@
+{
+  "baseUrl": "https://api.tasktohuman.com",
+  "headers": {
+    "authorization": "Bearer {{connection.apiKey}}",
+    "accept": "application/json",
+    "accept-language": "en",
+    "user-agent": "tasktohuman-make/1.0.0"
+  },
+  "response": {
+    "error": {
+      "message": "[{{statusCode}}] {{ifempty(body.title, 'TaskToHuman answered with an error.')}} {{ifempty(body.detail, '')}} {{ifempty(body.code, '')}}{{if(body.errors, ' Fields: ' + join(keys(body.errors), ', '), '')}}",
+      "400": {
+        "type": "DataError",
+        "message": "[{{statusCode}}] {{ifempty(body.title, 'TaskToHuman answered with an error.')}} {{ifempty(body.detail, '')}} {{ifempty(body.code, '')}}{{if(body.errors, ' Fields: ' + join(keys(body.errors), ', '), '')}}"
+      },
+      "401": {
+        "type": "InvalidAccessTokenError",
+        "message": "[401] TaskToHuman refused the API key. Reconnect with a key that is still active."
+      },
+      "402": {
+        "type": "InvalidConfigurationError",
+        "message": "[{{statusCode}}] {{if(body.code === 'not_enough_credits', 'Your organization is out of credits, so the task was not created. It needs ' + body.needed + ' credits, ' + body.available + ' are free and ' + body.held + ' are held by open tasks (reason: ' + body.reason + '). Buy a credit pack or turn on automatic buying in TaskToHuman (Plan > Credits), then turn the scenario on again (Make turned it off).', ifempty(body.title, 'TaskToHuman answered with an error.'))}} {{ifempty(body.detail, '')}} {{ifempty(body.code, '')}}{{if(body.errors, ' Fields: ' + join(keys(body.errors), ', '), '')}}"
+      },
+      "403": {
+        "type": "InvalidConfigurationError",
+        "message": "[{{statusCode}}] {{ifempty(body.title, 'TaskToHuman answered with an error.')}} {{ifempty(body.detail, '')}} {{ifempty(body.code, '')}}{{if(body.errors, ' Fields: ' + join(keys(body.errors), ', '), '')}}"
+      },
+      "404": {
+        "type": "DataError",
+        "message": "[404] Not found in this workspace and mode (a test key sees only test tasks)."
+      },
+      "409": {
+        "type": "DuplicateDataError",
+        "message": "[{{statusCode}}] {{ifempty(body.title, 'TaskToHuman answered with an error.')}} {{ifempty(body.detail, '')}} {{ifempty(body.code, '')}}{{if(body.errors, ' Fields: ' + join(keys(body.errors), ', '), '')}}"
+      },
+      "422": {
+        "type": "DataError",
+        "message": "[{{statusCode}}] {{ifempty(body.title, 'TaskToHuman answered with an error.')}} {{ifempty(body.detail, '')}} {{ifempty(body.code, '')}}{{if(body.errors, ' Fields: ' + join(keys(body.errors), ', '), '')}}"
+      }
+    }
+  },
+  "log": {
+    "sanitize": [
+      "request.headers.authorization"
+    ]
+  }
+}

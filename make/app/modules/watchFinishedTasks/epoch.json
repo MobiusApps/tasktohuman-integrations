@@ -1,0 +1,12 @@
+{
+  "qs": {
+    "finished_after": "{{addDays(now, -30)}}"
+  },
+  "response": {
+    "limit": 100,
+    "output": {
+      "label": "{{item.title}} ({{item.decision.action}}, {{formatDate(item.finished_at, 'YYYY-MM-DD HH:mm')}})",
+      "date": "{{parseDate(item.finished_at)}}"
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "name": "tasktohuman",
+  "label": "TaskToHuman",
+  "version": 1,
+  "versionFull": "1.0.0",
+  "description": "Ask a person to approve, edit or do a task, and continue your scenario with the decision.",
+  "theme": "#f2a516",
+  "language": "en",
+  "audience": "global"
+}

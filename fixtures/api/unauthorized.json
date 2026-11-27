@@ -1,0 +1,25 @@
+{
+  "title": "A missing or wrong key",
+  "request": {
+    "method": "GET",
+    "path": "/v1/me",
+    "auth": false,
+    "headers": {
+      "Authorization": "Bearer tth_live_wrong"
+    }
+  },
+  "response": {
+    "status": 401,
+    "headers": {
+      "Content-Type": "application/problem+json",
+      "WWW-Authenticate": "Bearer"
+    },
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.2",
+      "title": "Sign in to continue.",
+      "status": 401,
+      "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+      "code": "unauthorized"
+    }
+  }
+}

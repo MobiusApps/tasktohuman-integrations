@@ -1,0 +1,38 @@
+{
+	"name": "TaskToHuman: act on every approved refund",
+	"nodes": [
+		{
+			"parameters": {
+				"pollTimes": { "item": [{ "mode": "everyMinute" }] },
+				"event": "taskFinished",
+				"taskType": { "__rl": true, "mode": "key", "value": "approve_refund" },
+				"outcomes": ["approved", "edited"],
+				"includeAutomatic": false,
+				"includePayload": false
+			},
+			"id": "5d7e2a10-3c4b-4f8e-8a11-2b2c7d9e0001",
+			"name": "TaskToHuman Trigger",
+			"type": "n8n-nodes-tasktohuman.taskToHumanTrigger",
+			"typeVersion": 1,
+			"position": [0, 0],
+			"credentials": { "taskToHumanApi": { "name": "TaskToHuman account" } }
+		},
+		{
+			"parameters": {
+				"resource": "task",
+				"operation": "get",
+				"taskId": "={{ $json.id }}"
+			},
+			"id": "5d7e2a10-3c4b-4f8e-8a11-2b2c7d9e0002",
+			"name": "Get the task with its fields",
+			"type": "n8n-nodes-tasktohuman.taskToHuman",
+			"typeVersion": 1,
+			"position": [220, 0],
+			"credentials": { "taskToHumanApi": { "name": "TaskToHuman account" } }
+		}
+	],
+	"connections": {
+		"TaskToHuman Trigger": { "main": [[{ "node": "Get the task with its fields", "type": "main", "index": 0 }]] }
+	},
+	"settings": { "executionOrder": "v1" }
+}

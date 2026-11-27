@@ -1,0 +1,5 @@
+{
+  "type": "web",
+  "label": "TaskToHuman Task Finished",
+  "connection": "tasktohuman"
+}

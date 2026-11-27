@@ -1,0 +1,41 @@
+{
+  "title": "Cancel a task",
+  "operation": "cancelTask",
+  "request": {
+    "method": "POST",
+    "path": "/v1/tasks/01a1e3a7-6cee-70ef-995d-129e212beeb0/cancel"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "id": "01a1e3a7-6cee-70ef-995d-129e212beeb0",
+      "state": "cancelled",
+      "task_type": "approve_refund",
+      "title": "Refund request for order #4822",
+      "test": false,
+      "owner": null,
+      "expires_at": null,
+      "created_at": "2026-11-16T09:19:22.862Z",
+      "finished_at": "2026-11-16T09:19:30.777Z",
+      "escalations": 0,
+      "decision": {
+        "action": "cancelled",
+        "by": null,
+        "at": "2026-11-16T09:19:30.7778539Z",
+        "automatic": false,
+        "reason": null,
+        "comment": null,
+        "payload": null
+      },
+      "payload": {
+        "order_id": "4822",
+        "amount": 249,
+        "customer_email": "marta@example.com"
+      },
+      "payload_sha256": "c039eb0d560cb51766cf4a79e918bb20fb9985d39019df3338182d872199434a"
+    }
+  }
+}

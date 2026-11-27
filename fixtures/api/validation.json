@@ -1,0 +1,35 @@
+{
+  "title": "A field of the wrong type",
+  "request": {
+    "method": "POST",
+    "path": "/v1/tasks",
+    "body": {
+      "task_type": "approve_refund",
+      "payload": {
+        "order_id": "4821",
+        "amount": "249"
+      }
+    }
+  },
+  "response": {
+    "status": 400,
+    "headers": {
+      "Content-Type": "application/problem+json"
+    },
+    "body": {
+      "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+      "title": "Some fields need your attention.",
+      "status": 400,
+      "code": "validation_failed",
+      "errors": {
+        "payload.amount": [
+          {
+            "code": "field_invalid",
+            "message": "This value doesn't match the field's type."
+          }
+        ]
+      },
+      "traceId": "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"
+    }
+  }
+}

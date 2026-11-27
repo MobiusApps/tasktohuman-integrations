@@ -1,0 +1,45 @@
+{
+  "title": "Retry with the same key and body",
+  "request": {
+    "method": "POST",
+    "path": "/v1/tasks",
+    "headers": {
+      "Idempotency-Key": "refund-4821"
+    },
+    "body": {
+      "task_type": "approve_refund",
+      "title": "Refund €249 to order #4821?",
+      "payload": {
+        "order_id": "4821",
+        "amount": 249,
+        "reason": "Arrived damaged",
+        "customer_email": "marta@example.com"
+      },
+      "deadline_minutes": 120
+    }
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8",
+      "Idempotent-Replayed": "true"
+    },
+    "body": {
+      "id": "01a1e3a7-6489-7106-aa3a-c976287f9999",
+      "state": "notified",
+      "task_type": "approve_refund",
+      "title": "Refund €249 to order #4821?",
+      "test": false,
+      "owner": {
+        "id": "01a1dcba-b57a-7aa2-b6b1-05d81545c2ba",
+        "name": "Ana"
+      },
+      "expires_at": "2026-11-16T11:19:20.713Z",
+      "created_at": "2026-11-16T09:19:20.713Z",
+      "finished_at": null,
+      "escalations": 0,
+      "decision": null
+    },
+    "note": "200 response: the original task"
+  }
+}

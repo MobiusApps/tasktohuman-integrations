@@ -1,0 +1,82 @@
+[
+  {
+    "name": "task_type",
+    "type": "select",
+    "label": "Task Type",
+    "required": true,
+    "options": {
+      "store": "rpc://listTaskTypes",
+      "nested": "rpc://taskTypeFields"
+    },
+    "help": "One of your workspace's task types. Its fields appear below once you choose it."
+  },
+  {
+    "name": "title",
+    "type": "text",
+    "label": "Title",
+    "validate": {
+      "max": 200
+    },
+    "help": "Shown in notifications and not encrypted: keep sensitive data out of it. The task type's name when left empty."
+  },
+  {
+    "name": "deadline_minutes",
+    "type": "uinteger",
+    "label": "Deadline (Minutes)",
+    "validate": {
+      "min": 1,
+      "max": 525600
+    },
+    "help": "1 to 525600. The task type's default action applies when it passes. The task type's deadline when left empty."
+  },
+  {
+    "name": "urgent",
+    "type": "boolean",
+    "label": "Urgent",
+    "default": false,
+    "help": "Marks the task as urgent and starts its email subjects with [Urgent]. It never changes a timer."
+  },
+  {
+    "name": "approvers",
+    "type": "array",
+    "label": "Approvers",
+    "help": "Only for task types with open steps: the person for each open step, one entry per person (an open consensus step takes several entries). Leave empty otherwise.",
+    "spec": {
+      "type": "collection",
+      "label": "Approver",
+      "spec": [
+        {
+          "name": "step",
+          "type": "uinteger",
+          "label": "Step",
+          "required": true,
+          "help": "The step's number in the task type's chain, from 1."
+        },
+        {
+          "name": "human",
+          "type": "select",
+          "label": "Person",
+          "required": true,
+          "mode": "edit",
+          "options": "rpc://listHumans",
+          "help": "Names only; TaskToHuman never shares addresses."
+        }
+      ]
+    },
+    "labels": {
+      "add": "Add approver"
+    }
+  },
+  {
+    "name": "callback_url",
+    "type": "url",
+    "label": "Callback URL",
+    "help": "Where TaskToHuman sends the decision for this task, instead of the task type's callback URL. To continue in Make, paste the address shown by Watch Finished Tasks (Instant) in your second scenario."
+  },
+  {
+    "name": "idempotency_key",
+    "type": "text",
+    "label": "Idempotency Key",
+    "help": "A value that names this request, such as an order id. Sending the same value again returns the first task instead of asking twice."
+  }
+]

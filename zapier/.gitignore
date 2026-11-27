@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tgz
+*.tsbuildinfo
+.env
+.env.*
+.environment
+# Created by `zapier-platform register` (it holds the app id, no secret).
+.zapierapprc
+build/

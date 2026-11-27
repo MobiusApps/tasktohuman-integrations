@@ -1,0 +1,38 @@
+{
+  "title": "Get a task",
+  "operation": "getTask",
+  "request": {
+    "method": "GET",
+    "path": "/v1/tasks/01a1e3a7-6489-7106-aa3a-c976287f9999"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "id": "01a1e3a7-6489-7106-aa3a-c976287f9999",
+      "state": "notified",
+      "task_type": "approve_refund",
+      "title": "Refund €249 to order #4821?",
+      "test": false,
+      "owner": {
+        "id": "01a1dcba-b57a-7aa2-b6b1-05d81545c2ba",
+        "name": "Ana"
+      },
+      "expires_at": "2026-11-16T11:19:20.713Z",
+      "created_at": "2026-11-16T09:19:20.713Z",
+      "finished_at": null,
+      "escalations": 0,
+      "decision": null,
+      "payload": {
+        "order_id": "4821",
+        "amount": 249,
+        "reason": "Arrived damaged",
+        "customer_email": "marta@example.com"
+      },
+      "payload_sha256": "77d21b5d074a3fa4dca6ed88891f798696041c64eca3e26e7d5d3a7f91d747ef"
+    },
+    "note": "200 response: still waiting"
+  }
+}

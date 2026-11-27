@@ -1,0 +1,27 @@
+{
+  "url": "/v1/tasks",
+  "method": "GET",
+  "qs": {
+    "finished_after": "{{if(data.lastDate, addMinutes(data.lastDate, -2), '2000-01-01T00:00:00Z')}}",
+    "expand": "details",
+    "task_type": "{{parameters.task_type}}",
+    "limit": 25
+  },
+  "response": {
+    "iterate": "{{body.data}}",
+    "output": "{{item}}",
+    "limit": "{{parameters.limit}}",
+    "trigger": {
+      "type": "date",
+      "order": "asc",
+      "id": "{{item.id}}",
+      "date": "{{parseDate(item.finished_at)}}"
+    }
+  },
+  "pagination": {
+    "qs": {
+      "cursor": "{{body.next_cursor}}"
+    },
+    "condition": "{{body.next_cursor}}"
+  }
+}

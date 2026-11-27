@@ -1,0 +1,6 @@
+{
+  "label": "Search Tasks",
+  "description": "Lists tasks, newest first, by state, task type and creation time.",
+  "typeId": 9,
+  "connection": "tasktohuman"
+}

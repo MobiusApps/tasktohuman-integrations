@@ -1,0 +1,6 @@
+{
+  "label": "Watch Finished Tasks",
+  "description": "Triggers when a task is approved, rejected, edited, done, handed back, expires or is cancelled. Checks on your scenario's schedule.",
+  "typeId": 1,
+  "connection": "tasktohuman"
+}

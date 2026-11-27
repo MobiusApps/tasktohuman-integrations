@@ -1,0 +1,33 @@
+{
+  "name": "tasktohuman-zapier",
+  "version": "1.0.0",
+  "description": "TaskToHuman for Zapier: create tasks for people, wait for their decision, and start Zaps when tasks finish.",
+  "private": true,
+  "license": "MIT",
+  "author": "João Figueiredo Consultoria, Lda",
+  "type": "module",
+  "exports": "./dist/index.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "_zapier-build": "npm run build",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "npm run build && NODE_ENV=test node --test --test-reporter=spec \"test/*.test.mjs\"",
+    "validate": "DISABLE_ZAPIER_ANALYTICS=1 NO_UPDATE_NOTIFIER=1 zapier-platform validate --without-style"
+  },
+  "dependencies": {
+    "zapier-platform-core": "19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.4",
+    "@types/node": "22.19.0",
+    "eslint": "9.39.4",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1",
+    "zapier-platform-cli": "19.3.0"
+  }
+}

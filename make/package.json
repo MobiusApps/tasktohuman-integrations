@@ -1,0 +1,18 @@
+{
+  "name": "tasktohuman-make-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The TaskToHuman custom app for Make: component files, their offline checks and the upload script. Not published to npm.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test --test-reporter=spec \"test/*.test.mjs\"",
+    "upload": "node scripts/upload.mjs"
+  },
+  "devDependencies": {
+    "ajv": "8.20.0"
+  }
+}

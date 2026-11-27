@@ -1,0 +1,6 @@
+{
+  "label": "Get a Task",
+  "description": "Gets a task with its payload and, once it is finished, the decision.",
+  "typeId": 4,
+  "connection": "tasktohuman"
+}

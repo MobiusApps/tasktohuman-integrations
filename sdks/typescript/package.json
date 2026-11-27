@@ -1,0 +1,59 @@
+{
+  "name": "@tasktohuman/sdk",
+  "version": "0.1.0",
+  "description": "Official TypeScript SDK for the TaskToHuman API: create tasks for people, wait for their decision, verify signed callbacks.",
+  "license": "Apache-2.0",
+  "author": "João Figueiredo Consultoria, Lda",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
+  "keywords": [
+    "tasktohuman",
+    "human-in-the-loop",
+    "human-approval",
+    "approval",
+    "ai-agents",
+    "webhooks",
+    "sdk",
+    "typescript"
+  ],
+  "homepage": "https://github.com/MobiusApps/tasktohuman-integrations/tree/main/sdks/typescript#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MobiusApps/tasktohuman-integrations.git",
+    "directory": "sdks/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/MobiusApps/tasktohuman-integrations/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "clean": "node -e \"for (const d of ['dist','build-test']) require('node:fs').rmSync(d,{recursive:true,force:true})\"",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test": "npm run clean && tsc -p tsconfig.test.json && node --test --test-reporter=spec \"build-test/test/*.test.js\"",
+    "check:edge": "node scripts/check-edge.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "typescript": "7.0.2"
+  }
+}

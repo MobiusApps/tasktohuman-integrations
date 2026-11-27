@@ -1,0 +1,16 @@
+{
+  "id": "01a1e3a7-6489-7106-aa3a-c976287f9999",
+  "state": "notified",
+  "task_type": "approve_refund",
+  "title": "Refund €249 to order #4821?",
+  "test": false,
+  "owner": {
+    "id": "01a1dcba-b57a-7aa2-b6b1-05d81545c2ba",
+    "name": "Ana"
+  },
+  "expires_at": "2026-11-16T11:19:20.7134083Z",
+  "created_at": "2026-11-16T09:19:20.7134083Z",
+  "finished_at": null,
+  "escalations": 0,
+  "decision": null
+}

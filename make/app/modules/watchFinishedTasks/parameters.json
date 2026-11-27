@@ -1,0 +1,21 @@
+[
+  {
+    "name": "task_type",
+    "type": "select",
+    "label": "Task Type",
+    "options": "rpc://listTaskTypes",
+    "help": "Only tasks of this type. Every type when left empty. To keep only some outcomes, add a filter after this module on Decision: Action, and on Decision: Automatic = false to skip tasks nobody decided."
+  },
+  {
+    "name": "limit",
+    "type": "uinteger",
+    "label": "Limit",
+    "required": true,
+    "default": 10,
+    "validate": {
+      "min": 1,
+      "max": 100
+    },
+    "help": "The most finished tasks one run returns. The rest come in the next runs, oldest first."
+  }
+]

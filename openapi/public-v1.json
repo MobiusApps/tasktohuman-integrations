@@ -1,0 +1,2231 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "TaskToHuman API",
+    "description": "Create tasks for people, follow them and get the decision back. JSON in and out, snake_case property names, errors as RFC 9457 problem documents with a stable `code`.",
+    "version": "v1"
+  },
+  "servers": [
+    {
+      "url": "https://api.tasktohuman.com"
+    }
+  ],
+  "paths": {
+    "/v1/hooks/{token}": {
+      "post": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Create a task from a webhook",
+        "description": "Every task type has its own webhook URL; the token in it is the credential, so no API key is sent. Post any JSON object: the task type's mapping picks the title and each field by a dot path (`ticket.customer.email`, `items.0.name`), and a field without a mapping takes the top-level property of the same name. A task type with open steps maps each one (`approver.<step>`) to a property holding the human's email address or id, or, for an open consensus step, an array of them (one per person); without it the call is refused with `approver_required`, and an array element that is not a non-empty string with `approver_unknown`. Webhook tasks are always live. `Idempotency-Key` works as on `POST /v1/tasks`.",
+        "operationId": "createTaskFromWebhook",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "path",
+            "description": "The task type's webhook token (`tth_hook_…`), shown once in the app. It is the credential: keep the URL secret.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Up to 255 characters. A retry with the same key and body returns the original task instead of creating a second one.",
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Any JSON object. The task type's mapping turns it into the title and fields.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": { }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "description": "The new task: `/v1/tasks/{id}`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskView"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "`true`: a retry with the same `Idempotency-Key`; the body is the original task.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        },
+        "security": [ ]
+      }
+    },
+    "/v1/me": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Check your API key",
+        "description": "The organization, workspace and mode (`test` or `live`) the key belongs to. Use it to check a key before you send tasks.",
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyMeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/entitlements": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Read what your plan allows",
+        "description": "The organization's plan code and every feature and limit as it applies now: a feature is `true` or `false`, a limit a whole number, and `null` means unlimited. Integrations use it to hide what the plan does not include.",
+        "operationId": "getEntitlements",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicEntitlementsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks": {
+      "post": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Create a task",
+        "description": "Creates a task from one of your task types and notifies its first human. Answers `201 Created` with the task and a `Location` header; a retry with the same `Idempotency-Key` and body answers `200 OK` with the original task and `Idempotent-Replayed: true`. Unknown body properties are refused with `400 validation_failed` (`unknown_property`). When the task type has open steps (`GET /v1/task-types`), `approvers` names the human of each one, one entry per person: an open consensus step (with `approvals_needed`) takes between `approvals_needed` and `max_approvers` entries, each a different person. `approvers` is refused for any other step, and holds at most 100 entries. When the task type allows it (`chain_override` in `GET /v1/task-types`, plan feature `routing.chain_override`), `chain` replaces the task type's whole chain for this task: fixed people only, checked like a saved chain and against your plan; `approvers` and `owner` are then refused, and the default action, deadline and completion time stay the task type's. `urgency` (`normal` or `high`, default `normal`) marks the task and starts its email subjects with [Urgent]; it never changes a timer. A routing rule of the workspace may change the chain (unless you sent `chain` or `approvers`; with `owner`, your owner replaces only the rule's first step), the urgency and the tags.",
+        "operationId": "createTask",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Up to 255 characters. A retry with the same key and body returns the original task instead of creating a second one.",
+            "schema": {
+              "maxLength": 255,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTaskBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "Location": {
+                "description": "The new task: `/v1/tasks/{id}`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskView"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Idempotent-Replayed": {
+                "description": "`true`: a retry with the same `Idempotency-Key`; the body is the original task.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskView"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Payment Required",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "List tasks",
+        "description": "The key's workspace and mode only, newest first and then by `id`, without payloads. `limit` is 1 to 100 (default 50). When the answer has a `next_cursor`, there are more tasks: send it as `cursor` with the same filters for the next page; it is left out on the last page. A task created while you page never repeats or hides another. An unknown `task_type` gives an empty list; an unknown `state` is a `400 validation_failed`; a `cursor` that is not one gives an empty list. With `finished_after`, only finished tasks (resolved, expired or cancelled) that finished at or after that time, oldest finished first and then by `id`, paged the same way. When polling, start each poll a little before the latest `finished_at` seen (for example one minute) and skip the ids already handled. With `finished_after`, `expand=details` gives each task exactly as `GET /v1/tasks/{id}` does (`payload`, `payload_sha256`, the decision's `comment`, `fields` and `attachments`, and the comments in `quorum`), and `limit` is then 1 to 25 (default 25); `expand` without `finished_after`, or with any other value, is a `400 validation_failed`.",
+        "operationId": "listTasks",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "description": "Only tasks in this state: open, notified, acknowledged, resolved, expired or cancelled.",
+            "schema": {
+              "enum": [
+                "open",
+                "notified",
+                "acknowledged",
+                "resolved",
+                "expired",
+                "cancelled"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "task_type",
+            "in": "query",
+            "description": "Only tasks of this task type key.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "created_after",
+            "in": "query",
+            "description": "Only tasks created after this time (ISO 8601).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "created_before",
+            "in": "query",
+            "description": "Only tasks created before this time (ISO 8601).",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "finished_after",
+            "in": "query",
+            "description": "Only finished tasks that finished at or after this time (ISO 8601), oldest finished first, then by id.",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "The `next_cursor` of the page before, sent with the same filters; leave out for the first page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 100; default 50. With `expand=details`, 1 to 25; default 25.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "expand",
+            "in": "query",
+            "description": "`details`, only with `finished_after`: each task as `GET /v1/tasks/{id}` returns it (payload, comment, response fields and files).",
+            "schema": {
+              "enum": [
+                "details"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{id}": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Get a task",
+        "description": "One task with its `payload` and, once decided, the decision with the human's `comment` and any edited values. A task of another workspace or mode, or older than your plan's history, is a `404`.",
+        "operationId": "getTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{id}/cancel": {
+      "post": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Cancel a task",
+        "description": "Cancels an open task: it becomes `cancelled`, the humans notified so far are told, and the callback is sent. A task that is already resolved, expired or cancelled is a `409 task_already_finished` with its `state` and `action`.",
+        "operationId": "cancelTask",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tasks/{id}/attachments/{attachmentId}": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Download a file of a decision",
+        "description": "A file the person sent with their answer (a file field of the task type), as listed in `decision.attachments` of the task and its callback. Always `application/octet-stream` with `Content-Disposition: attachment`. Files are checked against an allow-list of types by name and content but are not virus-scanned. A task or file of another workspace or mode, or older than your plan's history, is a `404`. A file removed to fit the organization's storage allowance (listed with `removed: true`) is a `410 attachment_removed`.",
+        "operationId": "downloadTaskAttachment",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/task-types": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "List task types",
+        "description": "The task types of the key's workspace (archived ones left out), by key, with their `fields` (what `payload` of `POST /v1/tasks` takes), `default_deadline_minutes` and the steps of each chain: a step whose `assignment` is `at_creation` or `group` is open, and `POST /v1/tasks` must name its human in `approvers` (an open consensus step, shown with `approvals_needed` and `max_approvers`, takes that many different people, one entry each). `chain_override` says whether `POST /v1/tasks` may send its own `chain` for the type. Nothing else of a task type is shown here: never its callback, webhook, instructions or humans. A test key and a live key see the same task types. `limit` is 1 to 100 (default 50); when `next_cursor` is not null, send it as `cursor` for the next page. On every plan.",
+        "operationId": "listTaskTypes",
+        "parameters": [
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "The `next_cursor` of the page before; leave out for the first page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 100; default 50.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskTypeList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/task-types/{key}": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "Get a task type",
+        "description": "One task type of the key's workspace by its key, exactly as `GET /v1/task-types` lists it: `fields`, `default_deadline_minutes`, `steps` and `chain_override`. An unknown key, an archived task type or one of another workspace is a `404`. On every plan.",
+        "operationId": "getTaskType",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "description": "The task type's key (the `key` in `GET /v1/task-types`).",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTaskTypeView"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/humans": {
+      "get": {
+        "tags": [
+          "Public API"
+        ],
+        "summary": "List humans",
+        "description": "The humans of the key's workspace who can be asked (not archived, address not marked undeliverable), oldest first: `id` and `name` only, never an address. With `group` (a group id from `GET /v1/task-types`), only that group's members; an unknown group gives an empty list. `limit` is 1 to 100 (default 50); when `next_cursor` is not null, send it as `cursor` for the next page. Use the ids in `approvers` or `chain` when you create a task. Needs a plan with open steps (`routing.approver_at_creation`) or chain overrides (`routing.chain_override`); with `group`, `routing.human_groups`: `403 feature_not_in_plan` otherwise.",
+        "operationId": "listHumans",
+        "parameters": [
+          {
+            "name": "group",
+            "in": "query",
+            "description": "Only the members of this human group (an id from GET /v1/task-types).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "description": "The `next_cursor` of the page before; leave out for the first page.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "1 to 100; default 50.",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicHumanList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "WWW-Authenticate": {
+                "description": "`Bearer`.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before the next request.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicProblem"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiKeyMeResponse": {
+        "required": [
+          "organization",
+          "workspace",
+          "key"
+        ],
+        "type": "object",
+        "properties": {
+          "organization": {
+            "$ref": "#/components/schemas/NamedRef"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/NamedRef"
+          },
+          "key": {
+            "$ref": "#/components/schemas/ApiKeyRef"
+          }
+        }
+      },
+      "ApiKeyMode": {
+        "enum": [
+          "live",
+          "test"
+        ]
+      },
+      "ApiKeyRef": {
+        "required": [
+          "id",
+          "prefix",
+          "mode"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/ApiKeyMode"
+          }
+        }
+      },
+      "CreateTaskBody": {
+        "required": [
+          "task_type"
+        ],
+        "type": "object",
+        "properties": {
+          "task_type": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The task type's key, in the key's workspace."
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Up to 200 characters; the task type's name when left out. Not encrypted and shown in notifications: keep sensitive data out of it."
+          },
+          "payload": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "description": "The task type's fields, as a JSON object of up to 64 KB. Fields marked sensitive appear only on the task page."
+          },
+          "callback_url": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "A public https URL that receives the decision. Defaults to the task type's callback URL."
+          },
+          "deadline_minutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "1 to 525600 (a year). The task's default action applies when it passes. Defaults to the task type's deadline.",
+            "format": "int32"
+          },
+          "owner": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The id of a human in the workspace who gets the task first, instead of the task type's first step.",
+            "format": "uuid"
+          },
+          "approvers": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "required": [
+                "step"
+              ],
+              "type": "object",
+              "properties": {
+                "step": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ],
+                  "description": "The step's number in the task type's chain, from 1. One entry per person: an open consensus step takes between approvals_needed and max_approvers entries.",
+                  "format": "int32"
+                },
+                "human": {
+                  "type": [
+                    "null",
+                    "string"
+                  ],
+                  "description": "The human's id (GET /v1/humans). Give this or email, not both.",
+                  "format": "uuid"
+                },
+                "email": {
+                  "type": [
+                    "null",
+                    "string"
+                  ],
+                  "description": "The email address of exactly one active human of the workspace. Give this or human, not both."
+                }
+              }
+            },
+            "description": "The people of each open step of the task type (see GET /v1/task-types), one entry per person: every open step, and no other step. A single open step takes exactly one entry; an open consensus step takes between approvals_needed and max_approvers entries, each a different person. At most 100 entries."
+          },
+          "chain": {
+            "maxItems": 10,
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "object",
+              "properties": {
+                "human": {
+                  "type": [
+                    "null",
+                    "string"
+                  ],
+                  "description": "A single step: the human's id (GET /v1/humans). Give this or email, not both, and no approvers.",
+                  "format": "uuid"
+                },
+                "email": {
+                  "type": [
+                    "null",
+                    "string"
+                  ],
+                  "description": "A single step: the email address of exactly one active human of the workspace. Give this or human, not both."
+                },
+                "approvers": {
+                  "maxItems": 10,
+                  "type": [
+                    "null",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "human": {
+                        "type": [
+                          "null",
+                          "string"
+                        ],
+                        "description": "The human's id (GET /v1/humans). Give this or email, not both.",
+                        "format": "uuid"
+                      },
+                      "email": {
+                        "type": [
+                          "null",
+                          "string"
+                        ],
+                        "description": "The email address of exactly one active human of the workspace. Give this or human, not both."
+                      },
+                      "can_decide_alone": {
+                        "type": [
+                          "null",
+                          "boolean"
+                        ],
+                        "description": "This person's answer, approve or reject, decides the step whatever the others say. Defaults to false."
+                      }
+                    }
+                  },
+                  "description": "A consensus step: 2 to 10 different people, in order. Not with human or email."
+                },
+                "approvals_needed": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ],
+                  "description": "A consensus step: how many approvals decide it, from 2 to the number of approvers. Approval task types only.",
+                  "format": "int32"
+                },
+                "wait_seconds": {
+                  "type": [
+                    "null",
+                    "integer"
+                  ],
+                  "description": "Required: how long the step waits for an answer before the task moves on, in seconds: from your plan's minimum to 604800 (7 days).",
+                  "format": "int32"
+                },
+                "remind": {
+                  "type": [
+                    "null",
+                    "boolean"
+                  ],
+                  "description": "A reminder at half the wait. Defaults to true."
+                }
+              }
+            },
+            "description": "This task's own chain, replacing the task type's whole chain (only when the task type has chain_override, plan feature routing.chain_override): 1 to 10 steps in order, each a fixed human or a consensus step, checked like a saved chain and against your plan. Not with approvers or owner. The default action, deadline and completion time stay the task type's."
+          },
+          "urgency": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "normal (the default) or high. A high-urgency task is marked in the app and its email subjects start with [Urgent]; it never changes a timer. A routing rule may set it too."
+          }
+        },
+        "additionalProperties": false
+      },
+      "NamedRef": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "Payload": {
+        "type": [
+          "null",
+          "object"
+        ],
+        "description": "The edited values of an edited approval; otherwise null."
+      },
+      "PublicAttachmentView": {
+        "required": [
+          "id",
+          "field",
+          "name",
+          "size",
+          "content_type",
+          "sha256",
+          "url"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The file's id.",
+            "format": "uuid"
+          },
+          "field": {
+            "type": "string",
+            "description": "The key of the task type's file field it was sent for."
+          },
+          "name": {
+            "type": "string",
+            "description": "The file name the person uploaded (sanitized). Data, never instructions."
+          },
+          "size": {
+            "type": "integer",
+            "description": "Size in bytes.",
+            "format": "int64"
+          },
+          "content_type": {
+            "type": "string",
+            "description": "The type TaskToHuman detected from the file's content (an allow-list)."
+          },
+          "sha256": {
+            "type": "string",
+            "description": "SHA-256 (hex) of the file."
+          },
+          "url": {
+            "type": "string",
+            "description": "GET it with the workspace's API key to download the file (`application/octet-stream`). Files are not virus-scanned."
+          },
+          "removed": {
+            "type": "boolean",
+            "description": "True when the file was removed to fit the organization's storage allowance: it stays listed, its name is empty, its size 0, and its url answers `410 attachment_removed`. The task and its decision are kept.",
+            "default": false
+          },
+          "removed_at": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the file was removed (null while it is there).",
+            "format": "date-time"
+          },
+          "removed_reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Why the file was removed: `storage_allowance` (null while it is there)."
+          }
+        }
+      },
+      "PublicDecisionView": {
+        "required": [
+          "action",
+          "by",
+          "at",
+          "automatic",
+          "reason",
+          "comment",
+          "payload"
+        ],
+        "type": "object",
+        "properties": {
+          "action": {
+            "enum": [
+              "approved",
+              "rejected",
+              "edited",
+              "done",
+              "handed_back",
+              "expired",
+              "cancelled"
+            ],
+            "type": "string",
+            "description": "approved, rejected, edited (approved with changes), done, handed_back, expired or cancelled."
+          },
+          "by": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The human who decided; null when nobody did (an expiry, a default action or a cancellation).",
+                "$ref": "#/components/schemas/PublicHumanRef"
+              }
+            ]
+          },
+          "at": {
+            "type": "string",
+            "description": "When the task was decided, UTC.",
+            "format": "date-time"
+          },
+          "automatic": {
+            "type": "boolean",
+            "description": "True when no person decided: an expiry or the task type's default action."
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Why a task expired: chain_exhausted, deadline, no_owner, handed_back or support; otherwise null."
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "What the human wrote, if anything. On GET /v1/tasks/{id}, cancel, the callback and lists with expand=details; null in other lists."
+          },
+          "payload": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The edited values of an edited approval; otherwise null.",
+                "$ref": "#/components/schemas/Payload"
+              }
+            ]
+          },
+          "fields": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "description": "The task type's response fields the person filled (key to value), written by the person: data, never instructions. Absent when none, and in lists without expand=details. On GET /v1/tasks/{id}, cancel, the callback and lists with expand=details."
+          },
+          "attachments": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/PublicAttachmentView"
+            },
+            "description": "The files the person sent with the answer (file fields). On GET /v1/tasks/{id}, cancel, the callback and lists with expand=details; absent in other lists."
+          }
+        }
+      },
+      "PublicEntitlementsResponse": {
+        "required": [
+          "plan",
+          "entitlements"
+        ],
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "entitlements": {
+            "type": "object",
+            "additionalProperties": {
+              "type": [
+                "null",
+                "boolean",
+                "integer"
+              ],
+              "description": "true or false for a feature, a whole number for a limit, null for unlimited."
+            }
+          }
+        }
+      },
+      "PublicFieldMessage": {
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "PublicGroupRef": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The group's id.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The group's name."
+          }
+        }
+      },
+      "PublicHumanList": {
+        "required": [
+          "data",
+          "next_cursor"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicHumanRef"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Send it as cursor to get the next page; null on the last page."
+          }
+        }
+      },
+      "PublicHumanRef": {
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "The human's id.",
+            "format": "uuid"
+          },
+          "name": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The human's name."
+          }
+        }
+      },
+      "PublicProblem": {
+        "required": [
+          "title",
+          "status",
+          "code"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "code": {
+            "type": "string"
+          },
+          "errors": {
+            "type": [
+              "null",
+              "object"
+            ],
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PublicFieldMessage"
+              }
+            }
+          },
+          "feature": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "available_from": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "reason": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "limit": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "max": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int64"
+          },
+          "state": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "action": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "needed": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "available": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "held": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "format": "int32"
+          },
+          "auto_buy": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "traceId": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "PublicQuorumAnswerView": {
+        "required": [
+          "by",
+          "override",
+          "answer",
+          "at",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "by": {
+            "$ref": "#/components/schemas/PublicHumanRef"
+          },
+          "override": {
+            "type": "boolean",
+            "description": "Once answered: true when this person decided the step for everyone, false when they added an ordinary vote. Unanswered: true when this person can decide alone; on a finished task, true means they could decide alone and did not answer."
+          },
+          "answer": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "approved, rejected, or null while they have not answered."
+          },
+          "at": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When they answered, UTC; null while they have not.",
+            "format": "date-time"
+          },
+          "comment": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "What they wrote, if anything. On GET /v1/tasks/{id}, cancel, the callback and lists with expand=details; null in other lists."
+          }
+        }
+      },
+      "PublicQuorumView": {
+        "required": [
+          "needed",
+          "approvals",
+          "rejections",
+          "outcome",
+          "answers"
+        ],
+        "type": "object",
+        "properties": {
+          "needed": {
+            "type": "integer",
+            "description": "How many approvals decide the step.",
+            "format": "int32"
+          },
+          "approvals": {
+            "type": "integer",
+            "description": "Approvals so far.",
+            "format": "int32"
+          },
+          "rejections": {
+            "type": "integer",
+            "description": "Rejections so far.",
+            "format": "int32"
+          },
+          "outcome": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Once the task is finished: met (enough approvals), override (a person who can decide alone chose to decide for everyone), rejected (approval became impossible) or not_met (the task ended another way); null while it is open."
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicQuorumAnswerView"
+            }
+          }
+        }
+      },
+      "PublicStepView": {
+        "required": [
+          "step",
+          "assignment"
+        ],
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "integer",
+            "description": "The step's number in the chain, from 1.",
+            "format": "int32"
+          },
+          "assignment": {
+            "enum": [
+              "human",
+              "at_creation",
+              "group"
+            ],
+            "type": "string",
+            "description": "human (the task type names the human), at_creation (you name any human of the workspace in approvers) or group (you name a member of the step's group in approvers)."
+          },
+          "group": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Only on a group step: the group to choose from (its members: GET /v1/humans?group=<id>).",
+                "$ref": "#/components/schemas/PublicGroupRef"
+              }
+            ]
+          },
+          "approvals_needed": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Only on an open consensus step: how many approvals decide it. Name between approvals_needed and max_approvers different people for this step, one entry each.",
+            "format": "int32"
+          },
+          "max_approvers": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Only on an open consensus step: the most people you may name for it.",
+            "format": "int32"
+          }
+        }
+      },
+      "PublicTaskList": {
+        "required": [
+          "data"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicTaskView"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When there are more tasks: send it as cursor (with the same filters) to get the next page. Left out on the last page."
+          }
+        }
+      },
+      "PublicTaskTypeField": {
+        "required": [
+          "key",
+          "label",
+          "type",
+          "required",
+          "sensitive",
+          "editable"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The field's key in payload."
+          },
+          "label": {
+            "type": "string",
+            "description": "The label the person sees."
+          },
+          "type": {
+            "type": "string",
+            "description": "text (up to 1,000 characters), long_text (up to 20,000), number, boolean, email or url."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "True when POST /v1/tasks must send it."
+          },
+          "sensitive": {
+            "type": "boolean",
+            "description": "True when it is never shown in notifications, only on the task page."
+          },
+          "editable": {
+            "type": "boolean",
+            "description": "True when the person may change the value before approving (decision action edited)."
+          }
+        }
+      },
+      "PublicTaskTypeList": {
+        "required": [
+          "data",
+          "next_cursor"
+        ],
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicTaskTypeView"
+            }
+          },
+          "next_cursor": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Send it as cursor to get the next page; null on the last page."
+          }
+        }
+      },
+      "PublicTaskTypeView": {
+        "required": [
+          "key",
+          "name",
+          "kind",
+          "steps",
+          "chain_override",
+          "fields",
+          "default_deadline_minutes"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "The key to send as task_type."
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "approval",
+              "follow_up"
+            ],
+            "type": "string",
+            "description": "approval or follow_up."
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicStepView"
+            },
+            "description": "The chain's steps in order. A step whose assignment is not human is open: name its human in approvers when you create a task."
+          },
+          "chain_override": {
+            "type": "boolean",
+            "description": "True when a task of this type may send its own chain (POST /v1/tasks chain), replacing these steps for that task."
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicTaskTypeField"
+            },
+            "description": "The fields a task of this type takes in payload, in order."
+          },
+          "default_deadline_minutes": {
+            "type": [
+              "null",
+              "integer"
+            ],
+            "description": "Minutes until a task expires when POST /v1/tasks sends no deadline_minutes; null when the type has no deadline.",
+            "format": "int32"
+          }
+        }
+      },
+      "PublicTaskView": {
+        "required": [
+          "id",
+          "state",
+          "task_type",
+          "title",
+          "test",
+          "owner",
+          "expires_at",
+          "created_at",
+          "finished_at",
+          "escalations",
+          "decision"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "state": {
+            "enum": [
+              "open",
+              "notified",
+              "acknowledged",
+              "resolved",
+              "expired",
+              "cancelled"
+            ],
+            "type": "string",
+            "description": "open (just created, before the first notification), notified, acknowledged, resolved, expired or cancelled."
+          },
+          "task_type": {
+            "type": "string",
+            "description": "The task type's key."
+          },
+          "title": {
+            "type": "string",
+            "description": "The task's title."
+          },
+          "test": {
+            "type": "boolean",
+            "description": "True for a task created with a test key."
+          },
+          "owner": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The human who holds the task now; null once it is finished.",
+                "$ref": "#/components/schemas/PublicHumanRef"
+              }
+            ]
+          },
+          "expires_at": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "The deadline, UTC; null when the task has none.",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "When the task was created, UTC.",
+            "format": "date-time"
+          },
+          "finished_at": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "When the task finished (resolved, expired or cancelled), UTC; null while it is open.",
+            "format": "date-time"
+          },
+          "escalations": {
+            "type": "integer",
+            "description": "How many times the task moved to a later step of the chain.",
+            "format": "int32"
+          },
+          "decision": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The outcome once the task is finished; null while it is open.",
+                "$ref": "#/components/schemas/PublicDecisionView"
+              }
+            ]
+          },
+          "payload": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "The fields the task was created with. Only on GET /v1/tasks/{id}, cancel and lists with expand=details.",
+                "$ref": "#/components/schemas/Payload"
+              }
+            ]
+          },
+          "quorum": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Only when the task's current or final step is a consensus step (several people, N approvals needed): the counts, the outcome and each person's answer. Absent on single-human tasks. On a consensus step `owner` is the step's first person.",
+                "$ref": "#/components/schemas/PublicQuorumView"
+              }
+            ]
+          },
+          "payload_sha256": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "SHA-256 (hex) of the payload JSON as TaskToHuman stored it, the value the audit trail's `created` event carries: record it to prove later which payload a decision was about. Only on GET /v1/tasks/{id}, cancel and lists with expand=details."
+          },
+          "urgency": {
+            "type": "string",
+            "description": "normal or high: from the request, or set by a routing rule.",
+            "default": "normal"
+          },
+          "tags": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "type": "string"
+            },
+            "description": "Tags a routing rule added (lower-case keys); empty when none."
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "apiKey": {
+        "type": "http",
+        "description": "A workspace API key: `Authorization: Bearer tth_live_…` or `tth_test_…`.",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKey": [ ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Public API"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "title": "Check your key",
+  "operation": "getMe",
+  "request": {
+    "method": "GET",
+    "path": "/v1/me"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "organization": {
+        "id": "01a1dcb7-3aaf-7b52-9557-611799ccefc1",
+        "name": "Lumen Outdoor"
+      },
+      "workspace": {
+        "id": "01a1dcb7-3ab8-7bb2-b72a-95c34c3fa302",
+        "name": "Shop"
+      },
+      "key": {
+        "id": "01a1dcbb-783e-7d6e-bcff-a162a6c70959",
+        "prefix": "tth_live_8KdQ2mZp",
+        "mode": "live"
+      }
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "label": "Make an API Call",
+  "description": "Performs an arbitrary authorized call to the TaskToHuman API (/v1).",
+  "typeId": 12,
+  "connection": "tasktohuman"
+}

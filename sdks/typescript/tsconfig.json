@@ -1,0 +1,22 @@
+{
+  // The published code. No Node types on purpose ("types": []): src/ may use only what Node 22+, Deno, Bun,
+  // Cloudflare Workers and browsers all have (fetch, Web Crypto, TextEncoder, AbortSignal).
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "types": [],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "declaration": true,
+    "sourceMap": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "skipLibCheck": true
+  },
+  "include": ["src"]
+}

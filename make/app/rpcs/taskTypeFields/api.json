@@ -1,0 +1,23 @@
+{
+  "url": "/v1/task-types/{{encodeURL(parameters.task_type)}}",
+  "method": "GET",
+  "response": {
+    "iterate": "{{body.fields}}",
+    "output": {
+      "name": "{{item.key}}",
+      "label": "{{item.label}}{{if(item.sensitive, ' (sensitive)', '')}}",
+      "type": "{{switch(item.type, 'number', 'number', 'boolean', 'boolean', 'email', 'email', 'url', 'url', 'text')}}",
+      "multiline": "{{item.type === 'long_text'}}",
+      "required": "{{item.required}}",
+      "help": "{{if(item.sensitive, 'Shown only on the task page, masked until revealed. Make keeps what you map here in its run history.', '')}}"
+    },
+    "wrapper": [
+      {
+        "name": "payload",
+        "type": "collection",
+        "label": "Fields",
+        "spec": "{{output}}"
+      }
+    ]
+  }
+}

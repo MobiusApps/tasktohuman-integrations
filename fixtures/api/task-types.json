@@ -1,0 +1,74 @@
+{
+  "title": "List task types",
+  "operation": "listTaskTypes",
+  "request": {
+    "method": "GET",
+    "path": "/v1/task-types?limit=1"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json; charset=utf-8"
+    },
+    "body": {
+      "data": [
+        {
+          "key": "approve_refund",
+          "name": "Approve a refund",
+          "kind": "approval",
+          "steps": [
+            {
+              "step": 1,
+              "assignment": "human"
+            },
+            {
+              "step": 2,
+              "assignment": "group",
+              "group": {
+                "id": "01a1dd02-3c4b-7e19-9f0a-2b5c6d7e8f90",
+                "name": "Finance"
+              }
+            }
+          ],
+          "chain_override": false,
+          "fields": [
+            {
+              "key": "order_id",
+              "label": "Order",
+              "type": "text",
+              "required": true,
+              "sensitive": false,
+              "editable": false
+            },
+            {
+              "key": "amount",
+              "label": "Amount (€)",
+              "type": "number",
+              "required": true,
+              "sensitive": false,
+              "editable": true
+            },
+            {
+              "key": "reason",
+              "label": "Reason",
+              "type": "long_text",
+              "required": true,
+              "sensitive": false,
+              "editable": false
+            },
+            {
+              "key": "customer_email",
+              "label": "Customer email",
+              "type": "email",
+              "required": false,
+              "sensitive": true,
+              "editable": false
+            }
+          ],
+          "default_deadline_minutes": 1440
+        }
+      ],
+      "next_cursor": "approve_refund"
+    }
+  }
+}

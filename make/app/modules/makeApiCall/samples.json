@@ -1,0 +1,21 @@
+{
+  "body": {
+    "organization": {
+      "id": "01a1dcb7-3aaf-7b52-9557-611799ccefc1",
+      "name": "Lumen Outdoor"
+    },
+    "workspace": {
+      "id": "01a1dcb7-3ab8-7bb2-b72a-95c34c3fa302",
+      "name": "Shop"
+    },
+    "key": {
+      "id": "01a1dcbc-0d4e-7f21-9c3a-5b8e1f7a2d64",
+      "prefix": "tth_test_3Rw7NcYb",
+      "mode": "test"
+    }
+  },
+  "headers": {
+    "content-type": "application/json; charset=utf-8"
+  },
+  "statusCode": 200
+}

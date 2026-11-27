@@ -1,0 +1,28 @@
+{
+  "url": "https://api.tasktohuman.com/v1/me",
+  "method": "GET",
+  "headers": {
+    "authorization": "Bearer {{parameters.apiKey}}",
+    "accept": "application/json",
+    "accept-language": "en",
+    "user-agent": "tasktohuman-make/1.0.0"
+  },
+  "response": {
+    "valid": "{{statusCode === 200}}",
+    "metadata": {
+      "type": "text",
+      "value": "{{body.workspace.name}} · {{if(body.key.mode === 'test', 'Test', 'Live')}}"
+    },
+    "data": {
+      "mode": "{{body.key.mode}}"
+    },
+    "error": {
+      "message": "[{{statusCode}}] {{ifempty(body.title, 'TaskToHuman refused the API key.')}} Check that the key is active and copied in full."
+    }
+  },
+  "log": {
+    "sanitize": [
+      "request.headers.authorization"
+    ]
+  }
+}

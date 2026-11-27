@@ -1,0 +1,9 @@
+[
+  {
+    "name": "id",
+    "type": "text",
+    "label": "Task ID",
+    "required": true,
+    "help": "The id of a task of this connection's workspace and mode (a test key sees only test tasks)."
+  }
+]

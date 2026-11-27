@@ -1,0 +1,6 @@
+{
+  "label": "Cancel a Task",
+  "description": "Cancels a task that is not finished yet. A task that is already finished stops the run with a DataError, which an error handler can ignore.",
+  "typeId": 4,
+  "connection": "tasktohuman"
+}
