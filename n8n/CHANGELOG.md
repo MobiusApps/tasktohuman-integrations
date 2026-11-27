@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-27)
 
 - Credential "TaskToHuman API": API key, base URL, signing secret; tested with `GET /v1/me`.
 - TaskToHuman node, resource Task: Create, Create and Wait for Decision, Get, Get Many (with paging), Cancel.

@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-27)
 
 - `TaskToHuman` client: `createTask`, `getTask`, `listTasks`, `cancelTask`, `getMe`, `getEntitlements`,
   `waitForDecision`.

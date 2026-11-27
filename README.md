@@ -6,8 +6,8 @@ Official integrations for [TaskToHuman](https://tasktohuman.com).
 
 | Package | Folder | Status |
 | --- | --- | --- |
-| `@tasktohuman/sdk` (TypeScript, npm) | [`sdks/typescript`](sdks/typescript) | 0.1.0, not published yet |
-| `tasktohuman` (Python, PyPI) | [`sdks/python`](sdks/python) | 0.1.0, not published yet |
+| `@tasktohuman/sdk` (TypeScript, npm) | [`sdks/typescript`](sdks/typescript) | [0.1.0 on npm](https://www.npmjs.com/package/@tasktohuman/sdk) |
+| `tasktohuman` (Python, PyPI) | [`sdks/python`](sdks/python) | [0.1.0 on PyPI](https://pypi.org/project/tasktohuman/) |
 
 Both SDKs cover the public API `/v1` (create, get, list and cancel tasks, naming the approvers of open steps, listing
 and reading task types with their fields, listing humans, polling finished tasks with their details, downloading the files of a decision, `me`, `entitlements`), waiting for a decision, and verifying signed callbacks. Neither has runtime dependencies: the TypeScript SDK uses the platform's
@@ -82,7 +82,7 @@ signed callback instead of polling.
 
 | Package | Folder | Status |
 | --- | --- | --- |
-| `n8n-nodes-tasktohuman` (npm) | [`n8n`](n8n) | 0.1.0, not published yet |
+| `n8n-nodes-tasktohuman` (npm) | [`n8n`](n8n) | [0.1.0 on npm](https://www.npmjs.com/package/n8n-nodes-tasktohuman) |
 
 A TaskToHuman node for n8n (create a task, create one and wait for the decision, get, list and cancel tasks) and a
 trigger that starts a workflow when a task finishes. No runtime dependencies (n8n's rule for community nodes); it

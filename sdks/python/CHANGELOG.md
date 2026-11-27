@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.0 (unreleased)
+## 0.1.0 (2026-11-27)
 
 - First release, for API `/v1`: `create_task`, `get_task`, `list_tasks`, `cancel_task`, `wait_for_decision`, `get_me`, `get_entitlements`, and the same calls on `AsyncTaskToHuman`.
 - `verify_callback` for signed callbacks, with secret rotation.
