@@ -177,9 +177,35 @@ GitHub-hosted runner because npm accepts provenance only from one; `actionlint` 
 Pull requests from forks skip the package jobs (the `if:` on each); a maintainer reviews the change before its checks
 run. Changes to `.github/` from a fork are not accepted.
 
-Publishing to npm and PyPI happens only when a maintainer runs the workflow by hand on `main` (its `publish` input:
-`npm`, `pypi`, `both` or `n8n`; default `no`) and approves the protected environment. It publishes the very files the
-jobs built and tested, with trusted publishing (OIDC): the npm packages carry provenance, the PyPI files attestations.
+### CI and publishing
+
+The SDKs (`@tasktohuman/sdk` on npm, `tasktohuman` on PyPI) and the n8n node (`n8n-nodes-tasktohuman` on npm) are
+published by `sdk-ci`, with the very files its jobs built and tested, and trusted publishing (OIDC, no tokens): the npm
+packages carry provenance, the PyPI files attestations.
+
+A release:
+
+1. In one commit, raise the package's version (`sdks/typescript/package.json` together with
+   `sdks/typescript/src/version.ts`, `sdks/python/src/tasktohuman/_version.py`, or `n8n/package.json`) and give its
+   `CHANGELOG.md` a top entry `## <version> (<YYYY-MM-DD>)`.
+2. Push to `main`. The package jobs run; the `plan` job asks npm and PyPI whether each version is already there and
+   writes a table to the run's summary (`@tasktohuman/sdk | 0.1.1 | not on npm: publish`,
+   `tasktohuman | 0.1.0 | already on PyPI`).
+3. When every package job has passed, the publish jobs upload only the packages the plan marked. A push that does not
+   change a published version publishes nothing.
+
+The plan fails, and nothing is published, when a registry gives no clean answer (after a few tries), when a version
+is lower than the registry's latest, when a package to publish has no dated changelog entry for its version, or when
+`src/version.ts` and `package.json` disagree. Pre-releases (`0.2.0-rc.1`, `0.2.0rc1`) are never published
+automatically: a maintainer publishes them deliberately. Pull requests, other branches and forks never publish.
+
+Each publish job uses a protected environment (`npm` or `pypi`). With a required reviewer there, every publish waits
+for a maintainer's approval in GitHub (approve each publish); without one, publishing is fully automatic. The
+registries add their own protection: a version can be published only once.
+
+A run by hand on `main` chooses with its `publish` input: `no` (default: test only), `auto` (as a push does), or
+`npm`, `pypi`, `both`, `n8n` (exactly those packages, without asking the registries; the changelog check still
+applies).
 
 ### Releases on GitHub
 

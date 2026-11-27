@@ -2,8 +2,10 @@
 # app (make/). Tests run against local fake APIs or files only, never a real TaskToHuman host.
 # Last, on main and only when every package job passed: a GitHub Release of the commit, named YYYYMMDD-xx, with the built
 # packages attached (README, "Releases on GitHub").
-# Publishing to npm or PyPI happens only when a maintainer starts a run by hand on main with the "publish" input set
-# (default "no"); each publish job waits for its protected environment's approval.
+# Publishing (README, "CI and publishing"): on a push to main, the plan job lists each package whose version is not yet
+# on its registry, and the publish jobs upload those, after every package job passed. A run started by hand on main
+# chooses with the "publish" input. Each publish job waits for its protected environment's approval, if it has a
+# reviewer.
 #
 # Every job runs on the project's self-hosted runner (README, "CI"). The package jobs skip pull requests from forks
 # (the `if:` on each); a maintainer runs a fork's changes only after reviewing them.
@@ -13,12 +15,14 @@ on:
   workflow_dispatch:
     inputs:
       publish:
+        # auto: the packages whose version is not yet on the registry (as a push does); no: nothing; npm, pypi, both,
+        # n8n: exactly those packages (a registry refuses a version it already has).
         description: "Also publish the tested packages (main only, after the environment's approval)"
         type: choice
-        options: ["no", "npm", "pypi", "both", "n8n"]
+        options: ["no", "auto", "npm", "pypi", "both", "n8n"]
         default: "no"
-  # Automatic runs (on since 2026-11-23): every push to main and every pull request that touches a package, the API
-  # description, the fixtures or the CI itself. They never publish: the publish jobs need a run started by hand.
+  # Automatic runs: every push to main and every pull request that touches a package, the API description, the
+  # fixtures or the CI itself. A push to main publishes as "auto" does; a pull request never publishes.
   push:
     branches: [main]
     paths: ["sdks/**", "n8n/**", "zapier/**", "make/**", "openapi/**", "fixtures/**", ".github/**"]
@@ -27,11 +31,13 @@ on:
 
 permissions: {}
 
-# A newer plain run cancels an older one on the same ref. A publish run gets a group of its own (its run id), so no
-# later run can cancel it while it waits for approval or sits between the npm and PyPI uploads.
+# Only pull requests cancel: a newer run of the same pull request cancels the older one. Every other run (pushes to
+# main, runs by hand) may publish, so it gets a group of its own (its run id): no later run cancels it or waits behind
+# it while it waits for approval or sits between uploads. The publish jobs have their own groups, so two runs never
+# upload the same package at the same time.
 concurrency:
-  group: sdk-ci-${{ github.ref }}-${{ github.event_name == 'workflow_dispatch' && inputs.publish != 'no' && github.run_id || 'ci' }}
-  cancel-in-progress: true
+  group: sdk-ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 defaults:
   run:
@@ -83,7 +89,7 @@ jobs:
             exit 1
           fi
 
-      # The tarball `npm publish` would send, for the GitHub release (nothing is published to npm).
+      # The tarball for the GitHub release and, when the plan says so, for publish-npm (the very file it uploads).
       - name: Pack
         run: |
           mkdir -p "$RUNNER_TEMP/pack"
@@ -162,8 +168,8 @@ jobs:
           .wheel-venv/bin/python -m unittest discover -s tests -v
           rm -rf .wheel-venv
 
-      # The sdist and wheel, for the GitHub release (nothing is published to PyPI). One copy: the pure-Python wheel
-      # is the same for every Python version.
+      # The sdist and wheel, for the GitHub release and, when the plan says so, publish-pypi. One copy: the
+      # pure-Python wheel is the same for every Python version.
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.python == '3.14'
         with:
@@ -329,7 +335,7 @@ jobs:
 
   # One GitHub Release per commit of main that passed every package job above (README, "Releases on GitHub"): the tag
   # YYYYMMDD-xx on this commit, notes with the SDK versions and the commits since the previous release, and the
-  # packages the jobs built. Nothing is published to npm or PyPI. A commit that already has its release gets no
+  # packages the jobs built. This job publishes nothing to npm or PyPI. A commit that already has its release gets no
   # second one (a re-run is safe).
   release:
     name: GitHub release
@@ -353,7 +359,9 @@ jobs:
           merge-multiple: true
 
       - name: Scripts (unit tests)
-        run: python3 -I -B .github/scripts/github_release_test.py
+        run: |
+          python3 -I -B .github/scripts/github_release_test.py
+          python3 -I -B .github/scripts/publish_plan_test.py
 
       - name: Create the release
         env:
@@ -369,19 +377,57 @@ jobs:
           export RELEASE_FACTS
           python3 -I -B .github/scripts/github_release.py repo "$RUNNER_TEMP"/packages/*
 
-  # Optional, by hand only: publishes the tarball the sdk-typescript job built and tested. Runs only when a maintainer
-  # started this run on main with publish = npm or both, and only after the "npm" environment's reviewer approves.
-  # Authentication: npm trusted publishing (OIDC, no secret) once it is set up on npmjs.com; until then the
-  # environment secret NPM_TOKEN. Provenance is attached either way.
+  # Which packages this run publishes (README, "CI and publishing"), from .github/scripts/publish_plan.py: on a push
+  # to main (and a run by hand with publish = auto), each package whose version is not yet on npm or PyPI; on a run by
+  # hand otherwise, what the input names. It reads the public registries only: no secrets, no OIDC token. It fails,
+  # and nothing is published, when a registry gives no clean answer, when a version is lower than the registry's
+  # latest, or when a package to publish has no dated changelog entry for its version. The table is in the summary.
+  plan:
+    name: Publish plan
+    if: >-
+      github.repository == 'MobiusApps/tasktohuman-integrations' && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: [self-hosted, linux, x64, tasktohuman]
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      npm: ${{ steps.plan.outputs.npm }}
+      pypi: ${{ steps.plan.outputs.pypi }}
+      n8n: ${{ steps.plan.outputs.n8n }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Plan (unit tests)
+        run: python3 -I -B .github/scripts/publish_plan_test.py
+
+      - name: Plan
+        id: plan
+        env:
+          PUBLISH_MODE: ${{ github.event_name == 'push' && 'auto' || inputs.publish }}
+        run: python3 -I -B .github/scripts/publish_plan.py .
+
+  # Publishes the tarball the sdk-typescript job built and tested, when the plan says so (on main only, after every
+  # package job passed), and only after the "npm" environment's reviewer approves, if it has one. Authentication: npm
+  # trusted publishing (OIDC, no secret); the environment secret NPM_TOKEN only as a fallback. Provenance is attached
+  # either way.
   publish-npm:
     name: Publish to npm
-    needs: [sdk-typescript, sdk-python]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish == 'npm' || inputs.publish == 'both')
+    needs: [sdk-typescript, sdk-python, n8n-node, zapier-app, make-app, plan]
+    if: >-
+      github.repository == 'MobiusApps/tasktohuman-integrations' && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && needs.plan.outputs.npm == 'true'
     # GitHub-hosted on purpose: npm accepts a provenance statement only from a GitHub-hosted runner ("Unsupported
     # GitHub Actions runner environment: self-hosted"). The job builds nothing: it uploads the tarball the
     # self-hosted jobs built and tested. One of the two exceptions .github/scripts/check-runners.py allows.
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    concurrency:
+      group: publish-npm
+      cancel-in-progress: false
     environment:
       name: npm
       url: https://www.npmjs.com/package/@tasktohuman/sdk
@@ -409,16 +455,22 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish "$RUNNER_TEMP"/pack/*.tgz --access public --provenance --ignore-scripts
 
-  # Optional, by hand only: publishes the sdist and wheel the sdk-python job built and tested. Runs only when a
-  # maintainer started this run on main with publish = pypi or both, and only after the "pypi" environment's reviewer
-  # approves. Authentication: PyPI trusted publishing (OIDC, no secret); the environment secret PYPI_API_TOKEN only
-  # as a fallback.
+  # Publishes the sdist and wheel the sdk-python job built and tested, when the plan says so (on main only, after
+  # every package job passed), and only after the "pypi" environment's reviewer approves, if it has one.
+  # Authentication: PyPI trusted publishing (OIDC, no secret); the environment secret PYPI_API_TOKEN only as a
+  # fallback.
   publish-pypi:
     name: Publish to PyPI
-    needs: [sdk-typescript, sdk-python]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish == 'pypi' || inputs.publish == 'both')
+    needs: [sdk-typescript, sdk-python, n8n-node, zapier-app, make-app, plan]
+    if: >-
+      github.repository == 'MobiusApps/tasktohuman-integrations' && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && needs.plan.outputs.pypi == 'true'
     runs-on: [self-hosted, linux, x64, tasktohuman]
     timeout-minutes: 10
+    concurrency:
+      group: publish-pypi
+      cancel-in-progress: false
     environment:
       name: pypi
       url: https://pypi.org/project/tasktohuman/
@@ -436,18 +488,23 @@ jobs:
           # Empty when the secret is not set: the action then uses trusted publishing.
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-  # Optional, by hand only: publishes the n8n node tarball the n8n-node job built and tested. Runs only when a maintainer
-  # started this run on main with publish = n8n, and only after the "npm" environment's reviewer approves. n8n requires
-  # community nodes to be published from GitHub Actions with provenance. Authentication as for publish-npm: trusted
-  # publishing once set up for n8n-nodes-tasktohuman on npmjs.com, until then the environment secret NPM_TOKEN.
+  # Publishes the n8n node tarball the n8n-node job built and tested, when the plan says so (on main only, after every
+  # package job passed), and only after the "npm" environment's reviewer approves, if it has one. n8n requires
+  # community nodes to be published from GitHub Actions with provenance. Authentication as for publish-npm.
   # Afterwards, n8n's own scanner checks the published package in scan-n8n, a job without the OIDC token.
   publish-n8n:
     name: Publish the n8n node to npm
-    needs: [sdk-typescript, sdk-python, n8n-node]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish == 'n8n'
+    needs: [sdk-typescript, sdk-python, n8n-node, zapier-app, make-app, plan]
+    if: >-
+      github.repository == 'MobiusApps/tasktohuman-integrations' && github.ref == 'refs/heads/main'
+      && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && needs.plan.outputs.n8n == 'true'
     # GitHub-hosted on purpose, as publish-npm: npm accepts provenance only from a GitHub-hosted runner.
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    concurrency:
+      group: publish-n8n
+      cancel-in-progress: false
     environment:
       name: npm
       url: https://www.npmjs.com/package/n8n-nodes-tasktohuman
