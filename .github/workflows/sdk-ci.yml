@@ -377,7 +377,10 @@ jobs:
     name: Publish to npm
     needs: [sdk-typescript, sdk-python]
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.publish == 'npm' || inputs.publish == 'both')
-    runs-on: [self-hosted, linux, x64, tasktohuman]
+    # GitHub-hosted on purpose: npm accepts a provenance statement only from a GitHub-hosted runner ("Unsupported
+    # GitHub Actions runner environment: self-hosted"). The job builds nothing: it uploads the tarball the
+    # self-hosted jobs built and tested. One of the two exceptions .github/scripts/check-runners.py allows.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment:
       name: npm
@@ -442,7 +445,8 @@ jobs:
     name: Publish the n8n node to npm
     needs: [sdk-typescript, sdk-python, n8n-node]
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publish == 'n8n'
-    runs-on: [self-hosted, linux, x64, tasktohuman]
+    # GitHub-hosted on purpose, as publish-npm: npm accepts provenance only from a GitHub-hosted runner.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     environment:
       name: npm

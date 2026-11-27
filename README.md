@@ -171,7 +171,8 @@ PYTHONPATH=src .venv/bin/python -m unittest discover -s tests -v     # against a
 has one job per SDK, one for the n8n node, one for the Zapier app and one for the Make app, and runs the steps above;
 the Python job runs on Python 3.10 and 3.14 and repeats the tests against the built wheel. A check
 (`.github/scripts/check-runners.py`) keeps every job on the project's self-hosted runner
-(`runs-on: [self-hosted, linux, x64, tasktohuman]`); `actionlint` reads that label from `.github/actionlint.yaml`.
+(`runs-on: [self-hosted, linux, x64, tasktohuman]`), except the two jobs that upload to npm, which run on a
+GitHub-hosted runner because npm accepts provenance only from one; `actionlint` reads that label from `.github/actionlint.yaml`.
 
 Pull requests from forks skip the package jobs (the `if:` on each); a maintainer reviews the change before its checks
 run. Changes to `.github/` from a fork are not accepted.

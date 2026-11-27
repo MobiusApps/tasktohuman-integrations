@@ -1,4 +1,5 @@
-"""Every job of every workflow runs on the project's self-hosted runner, never on a GitHub-hosted one.
+"""Every job of every workflow runs on the project's self-hosted runner, never on a GitHub-hosted one, except the
+jobs listed in HOSTED below.
 
   python3 -I -B .github/scripts/check-runners.py [.github/workflows]
 
@@ -14,6 +15,12 @@ import re
 import sys
 
 WANTED = "[self-hosted, linux, x64, tasktohuman]"
+# The only jobs allowed on a GitHub-hosted runner, each with the exact label it must use: the two jobs that upload
+# to npm with provenance, which npm accepts only from a GitHub-hosted runner. They build and test nothing.
+HOSTED = {
+    ("sdk-ci.yml", "publish-npm"): "ubuntu-24.04",
+    ("sdk-ci.yml", "publish-n8n"): "ubuntu-24.04",
+}
 KEY = re.compile(r"^(\s*)([A-Za-z0-9_-]+):(.*)$")
 
 
@@ -55,6 +62,9 @@ def problems(name, text):
             continue  # a reusable workflow call
         if runs_on is None:
             found.append("%s: job %s has no runs-on" % (name, job))
+        elif (name, job) in HOSTED:
+            if runs_on != HOSTED[(name, job)]:
+                found.append("%s: job %s runs on %r, not %s" % (name, job, runs_on, HOSTED[(name, job)]))
         elif re.sub(r"\s+", " ", runs_on) != WANTED:
             found.append("%s: job %s runs on %r, not %s" % (name, job, runs_on, WANTED))
     return found
@@ -73,7 +83,7 @@ def main(argv):
     for p in found:
         print("::error::%s" % p)
     if not found:
-        print("Every job of %d workflow file(s) runs on %s." % (len(files), WANTED))
+        print("Every job of %d workflow file(s) runs on %s (%d listed exception(s))." % (len(files), WANTED, len(HOSTED)))
     return 1 if found else 0
 
 
